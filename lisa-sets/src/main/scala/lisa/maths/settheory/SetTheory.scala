@@ -1354,7 +1354,7 @@ object SetTheory extends lisa.Main {
   val cartesianProductUniqueness = Theorem(
     ∃!(z, ∀(t, in(t, z) <=> (in(t, powerSet(powerSet(setUnion(x, y)))) /\ ∃(a, ∃(b, (t === pair(a, b)) /\ in(a, x) /\ in(b, y))))))
   ) {
-    have(∃!(z, ∀(t, in(t, z) <=> (in(t, powerSet(powerSet(setUnion(x, y)))) /\ ∃(a, ∃(b, (t === pair(a, b)) /\ in(a, x) /\ in(b, y))))))) by UniqueComprehension(
+    have(thesis) by UniqueComprehension(
       powerSet(powerSet(setUnion(x, y))),
       lambda(t, ∃(a, ∃(b, (t === pair(a, b)) /\ in(a, x) /\ in(b, y))))
     )
@@ -1374,7 +1374,28 @@ object SetTheory extends lisa.Main {
    * @param y set
    */
   val cartesianProduct =
-    DEF(x, y) --> The(z, ∀(t, in(t, z) <=> (in(t, powerSet(powerSet(setUnion(x, y)))) /\ ∃(a, ∃(b, (t === pair(a, b)) /\ in(a, x) /\ in(b, y))))))(cartesianProductUniqueness)
+    DEF(x, y) --> The(
+      z,
+      ∀(
+        t,
+        in(t, z) <=>
+          (
+            in(t, powerSet(powerSet(setUnion(x, y))))
+              /\
+                ∃(
+                  a,
+                  ∃(
+                    b,
+                    (t === pair(a, b))
+                      /\
+                        in(a, x)
+                        /\
+                        in(b, y)
+                  )
+                )
+          )
+      )
+    )(cartesianProductUniqueness)
 
   /**
    * Theorem --- cartesian Product ([[cartesianProd]]) of any set with the
@@ -2340,7 +2361,7 @@ object SetTheory extends lisa.Main {
    *
    * Since functions from `x` to `y` contain pairs of the form `(a, b) | a ∈
    * x, b ∈ y`, it is a filtering on the power set of their product, i.e. `x
-   * → y ⊆ PP(x * y)`.
+   * → y ⊆ P(x * y)`.
    */
   val setOfFunctions = DEF(x, y) --> The(z, ∀(t, in(t, z) <=> (in(t, powerSet(cartesianProduct(x, y))) /\ functionalOver(t, x))))(setOfFunctionsUniqueness)
 
@@ -2831,23 +2852,46 @@ object SetTheory extends lisa.Main {
    *
    * TODO: explain
    */
-  val Sigma = DEF(x, f) --> union(restrictedFunction(f, x))
+  // val Sigma = DEF(x, f) --> union(restrictedFunction(f, x))
 
-  val piUniqueness = Theorem(
-    ∃!(z, ∀(g, in(g, z) <=> (in(g, powerSet(Sigma(x, f))) /\ (subset(x, relationDomain(g)) /\ functional(g)))))
-  ) {
-    have(∃!(z, ∀(g, in(g, z) <=> (in(g, powerSet(Sigma(x, f))) /\ (subset(x, relationDomain(g)) /\ functional(g)))))) by UniqueComprehension(
-      powerSet(Sigma(x, f)),
-      lambda(z, (subset(x, relationDomain(z)) /\ functional(z)))
-    )
-  }
+  // val fg = function[1]
+  // // val unionOver = DEF(A) --> union(A.map(fg))
+
+  // val piUniqueness = Theorem(
+  //   ∃!(z, ∀(g, in(g, z) <=> (in(g, powerSet(Sigma(x, f))) /\ (subset(x, relationDomain(g)) /\ functional(g)))))
+  // ) {
+  //   have(∃!(z, ∀(g, in(g, z) <=> (in(g, powerSet(Sigma(x, f))) /\ (subset(x, relationDomain(g)) /\ functional(g)))))) by UniqueComprehension(
+  //     powerSet(Sigma(x, f)),
+  //     lambda(z, (subset(x, relationDomain(z)) /\ functional(z)))
+  //   )
+  // }
+
+  // TODO: definitions:
+  // Union over a mapped set U_{a \in A} f(a) = U{f(a) | a \in A}
+  // ---
+  // TODO: theorems:
+  // Being in sigma means it is a dependant pair -- <a,b>: Sigma(A,B) <-> a ∈ A /\ b ∈ B(a)
+  // Sigma with empty set is empty -- Sigma({}, B) = {}
+  // Sigma generalizes cartesian product (when 'a' is not used) -- Sigma(A,B) = A x B
+  // Sigma is a subset of the cartesian product -- Sigma(A,B) ⊆ A x B
+  // Pi with empty set is empty -- Pi({}, B) = {}
+  // Pi generalizes function space (when 'a' is not used) -- Pi(A,B) = A -> B
+  // Pi is a subset of the space of functions -- Pi(A,B) ⊆ A -> B
 
   /**
    * Dependent Product (Pi)
    *
    * TODO: explain
    */
-  val Pi = DEF(x, f) --> The(z, ∀(g, in(g, z) <=> (in(g, powerSet(Sigma(x, f))) /\ (subset(x, relationDomain(g)) /\ functional(g)))))(piUniqueness)
+  // val Pi = DEF(x, f) --> The(
+  //   z,
+  //   ∀(
+  //     g,
+  //     in(g, z)
+  //       <=>
+  //         (in(g, powerSet(Sigma(x, f))) /\ (subset(x, relationDomain(g)) /\ functional(g)))
+  //   )
+  // )(piUniqueness)
 
   /**
    * Properties of relations

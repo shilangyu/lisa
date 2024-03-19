@@ -56,7 +56,8 @@ This is however not a convenient definition. In practice, all infinite axiomatiz
     $(x \in \operatorname{\mathcal{P}}(y)) \iff (x \subset y)$
   \end{axz}
   \begin{axz}[foundation]\label{axz:foundation}
-    $\forall x. (x \neq \emptyset) \implies (\exists y. (y \in x) \land (\forall z. z \in x))$
+    % ∃ y ∈ x. ∀ z. z ∈ x ⇒ ! z ∈ y
+    $\forall x. (x \neq \emptyset) \implies (\exists y. (y \in x) \land (\forall z. z \in x) \implies z \notin y)$
   \end{axz}
   \begin{axz}[comprehension schema]\label{axz:comprehension}
     $\exists y. \forall x. x \in y \iff (x \in z \land \phi(x))$
@@ -98,7 +99,7 @@ Those are typically syntactic sugar for a more verbose expression. For example i
 
 It turns out that the comprehension schema is a consequence of the replacement schema when the value plugged for $\psi(x, y)$ is $\phi(x) \land y = x$, i.e. when $\psi$ denotes a restriction of the diagonal relation. Hence, what follows is built only from replacement.
 Note that the replacement axiom \autoref{axzf:replacement} is conditional of the schematic symbol $\psi$ being a functional relation. It is more convenient to move this condition inside the axiom, to obtain a non-conditional equivalence. This is the approach adopted in Isabelle/ZF \cite{noelExperimentingIsabelleZF1993}. We instead can prove and use
-$$ \exists B, \forall y. y \in B \iff (\exists x. x \in A \land P(y, e) \land ∀ z. \psi(x, z) \implies z = y) $$
+$$ \exists B, \forall y. y \in B \iff (\exists x. x \in A \land P(x, y) \land \forall z. \psi(x, z) \implies z = y) $$
 Which maps elements of $A$ through the functional component of $\psi$ only. If $\psi$ is functional, those are equivalent.
 
 Lisa allows to write, for an arbitrary term \lstinline|t| and lambda expression \lstinline|P: (Term, Term) \mapsto Formula|,
@@ -112,7 +113,7 @@ Moreover, we most often want to map a set by a known function. In those case, Li
 \begin{table}[h]
   \begin{tabular}{l|l}
     \textbf{\lstinline|val c = |} & \textbf{\lstinline|c.elim(e)|} \\ \hline
-    \lstinline|t.replace(P)| & $e \in c \iff (\exists x. x \in t \land P(x, e) \land ∀ z. P(x, z) \implies z = e)$ \\
+    \lstinline|t.replace(P)| & $e \in c \iff (\exists x. x \in t \land P(x, e) \land \forall z. P(x, z) \implies z = e)$ \\
     \lstinline|t.collect(F, M)| & $e \in c \iff (\exists x. x \in t \land F(x) \land M(x) = e)$ \\
     \lstinline|t.map(M)| & $e \in c \iff (\exists x. x \in t \land M(x) = e)$ \\
     \lstinline|t.filter(F)| & $e \in c \iff e \in t \land F(e)$ \\   
