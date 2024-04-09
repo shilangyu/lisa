@@ -23,6 +23,32 @@ object Test extends lisa.Main {
   private val P = predicate[1]
   private val h = formulaVariable
 
+  val inAppIsFunctional = Theorem(
+    in(y, app(f, x)) |- functional(f) /\ in(x, relationDomain(f)) /\ in(pair(x, app(f, x)), f)
+  ) {
+    assume(in(y, app(f, x)))
+
+    val appIsNotEmpty = have(!(app(f, x) === ∅)) by Tautology.from(
+      setWithElementNonEmpty of (x := app(f, x))
+    )
+
+    val appDef = have(
+      ((functional(f) /\ in(x, relationDomain(f))) ==> in(pair(x, app(f, x)), f))
+        /\ ((!functional(f) \/ !in(x, relationDomain(f))) ==> (app(f, x) === ∅))
+    ) by InstantiateForall(app(f, x))(
+      app.definition
+    )
+
+    val isFunctional = have(functional(f) /\ in(x, relationDomain(f))) by Tautology.from(appDef, appIsNotEmpty)
+
+    val pairIn = have(in(pair(x, app(f, x)), f)) by Tautology.from(
+      appDef,
+      isFunctional
+    )
+
+    have(thesis) by Tautology.from(isFunctional, pairIn)
+  }
+
   /**
    * Sigma Pi
    */
@@ -36,22 +62,47 @@ object Test extends lisa.Main {
   val sigmaUniqueness = Theorem(
     ∃!(z, ∀(t, in(t, z) <=> ∃(a, ∃(b, (t === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a))))))
   ) {
-    val defCondition = ∃(a, ∃(b, (t === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a))))
-    val targetDef = ∀(t, in(t, z) <=> defCondition)
-    val largerSet = cartesianProduct(A, union(relationRange(B)))
-    val separationDef = ∀(t, in(t, z) <=> in(t, largerSet) /\ (defCondition))
-
     val inclusion = have(∃(a, ∃(b, (t === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a)))) ==> in(t, cartesianProduct(A, union(relationRange(B))))) subproof {
-      sorry
+      assume(∃(a, ∃(b, (t === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a)))))
+      val aw = witness(lastStep)
+      have(∃(b, (t === pair(aw, b)) /\ in(aw, A) /\ in(b, app(B, aw)))) by Restate
+      val bw = witness(lastStep)
+      val isPair = have(t === pair(aw, bw)) by Restate
+      val inA = have(in(aw, A)) by Restate
+      val inBApp = have(in(bw, app(B, aw))) by Restate
+
+      val inUnion = have(in(bw, union(relationRange(B)))) subproof {
+        val inRange = have(in(app(B, aw), relationRange(B))) subproof {
+          have(in(pair(aw, app(B, aw)), B)) by Tautology.from(inAppIsFunctional of (f := B, x := aw, y := bw), inBApp)
+          val rangeCondition = thenHave(∃(a, in(pair(a, app(B, aw)), B))) by RightExists
+
+          have(∀(t, in(t, relationRange(B)) <=> ∃(a, in(pair(a, t), B)))) by InstantiateForall(relationRange(B))(
+            relationRange.definition of (r -> B)
+          )
+          val rangeDef = thenHave(in(app(B, aw), relationRange(B)) <=> ∃(a, in(pair(a, app(B, aw)), B))) by InstantiateForall(app(B, aw))
+
+          have(thesis) by Tautology.from(rangeDef, rangeCondition)
+        }
+
+        // using the definition of a union with app(B, aw) as the intermediate set
+        have(in(app(B, aw), relationRange(B)) /\ in(bw, app(B, aw))) by Tautology.from(inRange, inBApp)
+        thenHave(∃(y, in(y, relationRange(B)) /\ in(bw, y))) by RightExists.withParameters(in(y, relationRange(B)) /\ in(bw, y), y, app(B, aw))
+        thenHave(thesis) by Substitution.ApplyRules(unionAxiom of (x := relationRange(B), z := bw))
+      }
+
+      have(in(aw, A) /\ in(bw, union(relationRange(B)))) by Tautology.from(inA, inUnion)
+      have(in(pair(aw, bw), cartesianProduct(A, union(relationRange(B))))) by Tautology.from(
+        lastStep,
+        pairInCartesianProduct of (a := aw, b := bw, x := A, y := union(relationRange(B)))
+      )
+      thenHave(in(t, cartesianProduct(A, union(relationRange(B))))) by Substitution.ApplyRules(isPair)
     }
 
-    // TODO: extract to a tactic: using definition that do not fit UniqueComprehension because of a lacking larger set. Tactic should just accept a proof that existing conditions already imply belonging to some larger set
     have(thesis) by UniqueComprehension.fromOriginalSet(
-      largerSet,
-      lambda(t, defCondition),
+      cartesianProduct(A, union(relationRange(B))),
+      lambda(t, ∃(a, ∃(b, (t === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a))))),
       inclusion
     )
-
   }
 
   val Sigma = DEF(A, B) --> The(
@@ -68,11 +119,10 @@ object Test extends lisa.Main {
   // Union over a mapped set U_{a \in A} f(a) = U{f(a) | a \in A}
   // ---
   // TODO: theorems:
-  // Sigma generalizes cartesian product (when 'a' is not used) -- Sigma(A,B) = A x B
-  // Sigma is a subset of the cartesian product -- Sigma(A,B) ⊆ A x B
-  // Pi with empty set is empty -- Pi({}, B) = P({})
-  // Pi generalizes function space (when 'a' is not used) -- Pi(A,B) = A -> B
-  // Pi is a subset of the space of functions -- Pi(A,B) ⊆ A -> B
+  // Sigma is a subset of the cartesian product -- Sigma(A,B) ⊆ A x B[A]
+  // Sigma is exactly cartesian product iff 'a' is not used -- B const <-> Sigma(A,B) = A x B[A]
+  // Pi is a subset of the space of functions -- Pi(A,B) ⊆ A -> B[A]
+  // Pi is exactly function space iff 'a' is not used -- B const <-> Pi(A,B) = A -> B[A]
 
   val sigmaWithEmptySet = Theorem(
     () |- Sigma(∅, B) === ∅
@@ -103,13 +153,51 @@ object Test extends lisa.Main {
   val firstInSigma = Theorem(
     in(p, Sigma(A, B)) |- in(firstInPair(p), A)
   ) {
-    sorry
+    assume(in(p, Sigma(A, B)))
+
+    have(∀(t, in(t, Sigma(A, B)) <=> (∃(a, ∃(b, (t === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a))))))) by InstantiateForall(Sigma(A, B))(
+      Sigma.definition
+    )
+    thenHave(in(p, Sigma(A, B)) <=> (∃(a, ∃(b, (p === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a)))))) by InstantiateForall(p)
+    thenHave(∃(a, ∃(b, (p === pair(a, b)) /\ in(a, A)))) by Tautology
+
+    val aw = witness(lastStep)
+    thenHave(∃(b, (p === pair(aw, b)) /\ in(aw, A))) by Restate
+    val bw = witness(lastStep)
+    val isPairAndInA = thenHave((p === pair(aw, bw)) /\ in(aw, A)) by Restate
+    val isPair = have(p === pair(aw, bw)) by Weakening(isPairAndInA)
+    val inA = have(in(aw, A)) by Weakening(isPairAndInA)
+
+    val first = have(firstInPair(pair(aw, bw)) === aw) by Tautology.from(firstInPairReduction of (x := aw, y := bw))
+
+    have(in(firstInPair(pair(aw, bw)), A)) by Substitution.ApplyRules(first)(inA)
+    thenHave(thesis) by Substitution.ApplyRules(isPair)
   }
 
   val secondInSigma = Theorem(
     in(p, Sigma(A, B)) |- in(secondInPair(p), app(B, firstInPair(p)))
   ) {
-    sorry
+    assume(in(p, Sigma(A, B)))
+
+    have(∀(t, in(t, Sigma(A, B)) <=> (∃(a, ∃(b, (t === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a))))))) by InstantiateForall(Sigma(A, B))(
+      Sigma.definition
+    )
+    thenHave(in(p, Sigma(A, B)) <=> (∃(a, ∃(b, (p === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a)))))) by InstantiateForall(p)
+    thenHave(∃(a, ∃(b, (p === pair(a, b)) /\ in(a, A) /\ in(b, app(B, a))))) by Tautology
+
+    val aw = witness(lastStep)
+    thenHave(∃(b, (p === pair(aw, b)) /\ in(aw, A) /\ in(b, app(B, aw)))) by Restate
+    val bw = witness(lastStep)
+    val isPairAndInAAndBInApp = thenHave((p === pair(aw, bw)) /\ in(aw, A) /\ in(bw, app(B, aw))) by Restate
+    val isPair = have(p === pair(aw, bw)) by Weakening(isPairAndInAAndBInApp)
+    val inA = have(in(aw, A)) by Weakening(isPairAndInAAndBInApp)
+    val BInApp = have(in(bw, app(B, aw))) by Weakening(isPairAndInAAndBInApp)
+
+    val first = have(firstInPair(pair(aw, bw)) === aw) by Tautology.from(firstInPairReduction of (x := aw, y := bw))
+    val second = have(secondInPair(pair(aw, bw)) === bw) by Tautology.from(secondInPairReduction of (x := aw, y := bw))
+
+    have(in(secondInPair(pair(aw, bw)), app(B, firstInPair(pair(aw, bw))))) by Substitution.ApplyRules(first, second)(BInApp)
+    thenHave(thesis) by Substitution.ApplyRules(isPair)
   }
 
   val sigmaIsCartesianProductWhenBIsConstant = Theorem(
