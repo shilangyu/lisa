@@ -207,11 +207,11 @@ object Test extends lisa.Main {
   }
 
   val piUniqueness = Theorem(
-    ∃!(z, ∀(g, in(g, z) <=> (in(g, powerSet(Sigma(x, f))) /\ (subset(x, relationDomain(g)) /\ functional(g)))))
+    ∃!(z, ∀(g, in(g, z) <=> (in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x))))
   ) {
     have(thesis) by UniqueComprehension(
       powerSet(Sigma(x, f)),
-      lambda(z, (subset(x, relationDomain(z)) /\ functional(z)))
+      lambda(z, functionalOver(z, x))
     )
   }
 
@@ -226,7 +226,7 @@ object Test extends lisa.Main {
       g,
       in(g, z)
         <=>
-          (in(g, powerSet(Sigma(x, f))) /\ (subset(x, relationDomain(g)) /\ functional(g)))
+          (in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x))
     )
   )(piUniqueness)
 
@@ -268,14 +268,31 @@ object Test extends lisa.Main {
     have(thesis) by Tautology.from(isRelation, uniqueY, functional.definition of (f := ∅))
   }
 
+  val domainOfEmptySetIsEmpty = Theorem(
+    ∅ === relationDomain(∅)
+  ) {
+    have(∀(t, in(t, relationDomain(∅)) <=> ∃(a, in(pair(t, a), ∅)))) by InstantiateForall(relationDomain(∅))(
+      relationDomain.definition of (r := ∅)
+    )
+    val domainDef = thenHave(in(t, relationDomain(∅)) <=> ∃(a, in(pair(t, a), ∅))) by InstantiateForall(t)
+    val contraPosDomainDef = have(!in(t, relationDomain(∅)) <=> ∀(a, !in(pair(t, a), ∅))) by Tautology.from(domainDef)
+    have(!in(pair(t, a), ∅)) by Tautology.from(emptySetAxiom of (x := pair(t, a)))
+    val nothingInEmpty = thenHave(∀(a, !in(pair(t, a), ∅))) by RightForall
+
+    have(!in(t, relationDomain(∅))) by Tautology.from(nothingInEmpty, contraPosDomainDef)
+    thenHave(∀(t, !in(t, relationDomain(∅)))) by RightForall
+
+    have(thesis) by Tautology.from(lastStep, setWithNoElementsIsEmpty of (x := relationDomain(∅)))
+  }
+
   val piWithEmptySet = Theorem(
     () |- Pi(∅, f) === powerSet(∅)
   ) {
-    have(∀(g, in(g, Pi(∅, f)) <=> (in(g, powerSet(Sigma(∅, f))) /\ (subset(∅, relationDomain(g)) /\ functional(g))))) by InstantiateForall(Pi(∅, f))(
+    have(∀(g, in(g, Pi(∅, f)) <=> (in(g, powerSet(Sigma(∅, f))) /\ functionalOver(g, ∅)))) by InstantiateForall(Pi(∅, f))(
       Pi.definition of (x -> ∅)
     )
-    thenHave(∀(g, in(g, Pi(∅, f)) <=> (in(g, powerSet(∅)) /\ (subset(∅, relationDomain(g)) /\ functional(g))))) by Substitution.ApplyRules(sigmaWithEmptySet)
-    val piDef = thenHave(in(g, Pi(∅, f)) <=> (in(g, powerSet(∅)) /\ (subset(∅, relationDomain(g)) /\ functional(g)))) by InstantiateForall(g)
+    thenHave(∀(g, in(g, Pi(∅, f)) <=> (in(g, powerSet(∅)) /\ functionalOver(g, ∅)))) by Substitution.ApplyRules(sigmaWithEmptySet)
+    val piDef = thenHave(in(g, Pi(∅, f)) <=> (in(g, powerSet(∅)) /\ functionalOver(g, ∅))) by InstantiateForall(g)
 
     val lhs = have(in(g, Pi(∅, f)) ==> (in(g, powerSet(∅)))) by Weakening(piDef)
 
@@ -285,12 +302,19 @@ object Test extends lisa.Main {
       have(in(g, singleton(∅))) by Substitution.ApplyRules(powerSetEmptySet)(assumption)
       val gIsEmpty = thenHave(g === ∅) by Substitution.ApplyRules(singletonHasNoExtraElements of (y := g, x := ∅))
 
-      val isSubset = have(subset(∅, relationDomain(g))) by Weakening(emptySetIsASubset of (x := relationDomain(g)))
+      have(∅ === relationDomain(∅)) by Weakening(domainOfEmptySetIsEmpty)
+      val isDomain = thenHave(∅ === relationDomain(g)) by Substitution.ApplyRules(gIsEmpty)
 
       have(functional(∅)) by Weakening(emptySetFunctional)
       val isFunctional = thenHave(functional(g)) by Substitution.ApplyRules(gIsEmpty)
 
-      val result = have(in(g, Pi(∅, f))) by Tautology.from(piDef, assumption, isSubset, isFunctional)
+      val isFunctionalOver = have(functionalOver(g, ∅)) by Tautology.from(
+        functionalOver.definition of (f := g, x := ∅),
+        isFunctional,
+        isDomain
+      )
+
+      val result = have(in(g, Pi(∅, f))) by Tautology.from(piDef, assumption, isFunctionalOver)
 
       have(thesis) by Tautology.from(assumption, result)
     }
