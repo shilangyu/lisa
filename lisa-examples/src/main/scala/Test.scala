@@ -5,6 +5,7 @@ object Test extends lisa.Main {
   import lisa.automation.settheory.SetTheoryTactics.*
   import lisa.maths.settheory.Comprehensions.*
   import lisa.maths.Quantifiers.*
+  import lisa.automation.kernel.CommonTactics.*
 
   val x = variable
   val y = variable
@@ -47,6 +48,190 @@ object Test extends lisa.Main {
     )
 
     have(thesis) by Tautology.from(isFunctional, pairIn)
+  }
+
+  val elemInItsPowerSet = Theorem(
+    in(x, powerSet(x))
+  ) {
+    have(thesis) by Tautology.from(powerAxiom of (y := x), subsetReflexivity)
+  }
+
+  val constantFunction = DEF(x, t) --> cartesianProduct(x, singleton(t))
+
+  val constantFunctionDomain = Theorem(
+    relationDomain(constantFunction(x, t)) === x
+  ) {
+    val constFunDef = have((constantFunction(x, t) === cartesianProduct(x, singleton(t)))) by Weakening(constantFunction.definition of constantFunction(x, t))
+
+    have(∀(p, in(p, relationDomain(constantFunction(x, t))) <=> ∃(a, in(pair(p, a), constantFunction(x, t))))) by InstantiateForall(relationDomain(constantFunction(x, t)))(
+      relationDomain.definition of (r := constantFunction(x, t))
+    )
+    val domainDef = thenHave(in(p, relationDomain(constantFunction(x, t))) <=> ∃(a, in(pair(p, a), constantFunction(x, t)))) by InstantiateForall(p)
+
+    val rhs = have(∃(a, in(pair(p, a), constantFunction(x, t))) ==> in(p, x)) subproof {
+      val assumption = assume(∃(a, in(pair(p, a), constantFunction(x, t))))
+      val aw = witness(assumption)
+      have(in(pair(p, aw), constantFunction(x, t))) by Restate
+      thenHave(in(pair(p, aw), cartesianProduct(x, singleton(t)))) by Substitution.ApplyRules(constFunDef)
+
+      have(thesis) by Tautology.from(lastStep, pairInCartesianProduct of (a := p, b := aw, y := singleton(t)))
+    }
+
+    val lhs = have(in(p, x) ==> ∃(a, in(pair(p, a), constantFunction(x, t)))) subproof {
+      assume(in(p, x))
+      val tIn = have(in(t, singleton(t))) by Tautology.from(singletonHasNoExtraElements of (y := t, x := t))
+
+      have(in(pair(p, t), cartesianProduct(x, singleton(t)))) by Tautology.from(
+        pairInCartesianProduct of (a := p, b := t, y := singleton(t)),
+        tIn
+      )
+      thenHave(∃(a, in(pair(p, a), cartesianProduct(x, singleton(t))))) by RightExists
+      thenHave(∃(a, in(pair(p, a), constantFunction(x, t)))) by Substitution.ApplyRules(constFunDef)
+    }
+
+    have(in(p, x) <=> in(p, relationDomain(constantFunction(x, t)))) by Tautology.from(domainDef, rhs, lhs)
+    val ext = thenHave(∀(p, in(p, x) <=> in(p, relationDomain(constantFunction(x, t))))) by RightForall
+
+    have(thesis) by Tautology.from(ext, extensionalityAxiom of (y := relationDomain(constantFunction(x, t))))
+  }
+
+  val cartesianProductIsRelation = Theorem(
+    relation(cartesianProduct(x, y))
+  ) {
+    have(relationBetween(cartesianProduct(x, y), x, y)) by Tautology.from(
+      subsetReflexivity of (x := cartesianProduct(x, y)),
+      relationBetween.definition of (r := cartesianProduct(x, y), a := x, b := y)
+    )
+    thenHave(∃(b, relationBetween(cartesianProduct(x, y), x, b))) by RightExists
+    val relationSpec = thenHave(∃(a, ∃(b, relationBetween(cartesianProduct(x, y), a, b)))) by RightExists
+
+    have(thesis) by Tautology.from(relationSpec, relation.definition of (r := cartesianProduct(x, y)))
+  }
+
+  val constantFunctionIsFunctional = Theorem(
+    functional(constantFunction(x, t))
+  ) {
+    val constFunDef = have((constantFunction(x, t) === cartesianProduct(x, singleton(t)))) by Weakening(constantFunction.definition of constantFunction(x, t))
+
+    val isRelation = have(relation(constantFunction(x, t))) subproof {
+      have(relation(cartesianProduct(x, singleton(t)))) by Weakening(cartesianProductIsRelation of (y := singleton(t)))
+      thenHave(thesis) by Substitution.ApplyRules(constFunDef)
+    }
+
+    val uniqueY = have(∀(a, ∃(y, in(pair(a, y), constantFunction(x, t))) ==> ∃!(y, in(pair(a, y), constantFunction(x, t))))) subproof {
+      have(∃(y, in(pair(a, y), constantFunction(x, t))) ==> ∃!(y, in(pair(a, y), constantFunction(x, t)))) subproof {
+        val existence = assume(∃(y, in(pair(a, y), constantFunction(x, t))))
+
+        val uniqueness = have((in(pair(a, y), constantFunction(x, t)), in(pair(a, p), constantFunction(x, t))) |- (y === p)) subproof {
+          val assumption1 = assume(in(pair(a, y), constantFunction(x, t)))
+          val assumption2 = assume(in(pair(a, p), constantFunction(x, t)))
+
+          have(in(pair(a, y), cartesianProduct(x, singleton(t)))) by Substitution.ApplyRules(constFunDef)(assumption1)
+          val eq1 = have(y === t) by Tautology.from(
+            pairInCartesianProduct of (b := y, y := singleton(t)),
+            lastStep,
+            singletonHasNoExtraElements of (x := t)
+          )
+
+          have(in(pair(a, p), cartesianProduct(x, singleton(t)))) by Substitution.ApplyRules(constFunDef)(assumption2)
+          val eq2 = have(p === t) by Tautology.from(
+            pairInCartesianProduct of (b := p, y := singleton(t)),
+            lastStep,
+            singletonHasNoExtraElements of (x := t, y := p)
+          )
+
+          have(y === p) by Tautology.from(eq1, eq2, equalityTransitivity of (x := y, y := t, z := p))
+        }
+
+        have(∃!(y, in(pair(a, y), constantFunction(x, t)))) by ExistenceAndUniqueness(in(pair(a, y), constantFunction(x, t)))(existence, uniqueness)
+      }
+      thenHave(thesis) by RightForall
+    }
+
+    have(thesis) by Tautology.from(isRelation, uniqueY, functional.definition of (f := constantFunction(x, t)))
+  }
+
+  val constantFunctionFunctionFrom = Theorem(
+    functionFrom(constantFunction(x, t), x, singleton(t))
+  ) {
+    val constFunDef = have((constantFunction(x, t) === cartesianProduct(x, singleton(t)))) by Weakening(constantFunction.definition of constantFunction(x, t))
+
+    have(∀(a, in(a, setOfFunctions(x, singleton(t))) <=> (in(a, powerSet(cartesianProduct(x, singleton(t)))) /\ functionalOver(a, x)))) by InstantiateForall(setOfFunctions(x, singleton(t)))(
+      setOfFunctions.definition of (y := singleton(t))
+    )
+    val setOfFunctionsDef = thenHave(
+      in(constantFunction(x, t), setOfFunctions(x, singleton(t))) <=> (in(constantFunction(x, t), powerSet(cartesianProduct(x, singleton(t)))) /\ functionalOver(constantFunction(x, t), x))
+    ) by InstantiateForall(constantFunction(x, t))
+
+    have(in(cartesianProduct(x, singleton(t)), powerSet(cartesianProduct(x, singleton(t))))) by Weakening(elemInItsPowerSet of (x := cartesianProduct(x, singleton(t))))
+    val inPowerSet = thenHave(in(constantFunction(x, t), powerSet(cartesianProduct(x, singleton(t))))) by Substitution.ApplyRules(constFunDef)
+
+    val funcOver = have(functionalOver(constantFunction(x, t), x)) by Tautology.from(
+      constantFunctionIsFunctional,
+      constantFunctionDomain,
+      functionalOver.definition of (f := constantFunction(x, t))
+    )
+
+    have(thesis) by Tautology.from(
+      inPowerSet,
+      funcOver,
+      setOfFunctionsDef,
+      functionFrom.definition of (f := constantFunction(x, t), y := singleton(t))
+    )
+  }
+  val functionFromApplication = Theorem(
+    functionFrom(f, x, y) /\ in(a, x) |- in(app(f, a), y)
+  ) {
+    val funcFrom = assume(functionFrom(f, x, y))
+    val inDomain = assume(in(a, x))
+
+    val isFunctional = have(functional(f)) by Tautology.from(funcFrom, functionFromImpliesFunctional)
+    val relDomainEq = have(relationDomain(f) === x) by Tautology.from(funcFrom, functionFromImpliesDomainEq)
+    val inRelDomain = have(in(a, relationDomain(f))) by Substitution.ApplyRules(relDomainEq)(inDomain)
+
+    val appDef = have(
+      ((functional(f) /\ in(a, relationDomain(f))) ==> in(pair(a, app(f, a)), f))
+        /\ ((!functional(f) \/ !in(a, relationDomain(f))) ==> (app(f, a) === ∅))
+    ) by InstantiateForall(app(f, a))(
+      app.definition of (x := a)
+    )
+
+    have(in(pair(a, app(f, a)), f)) by Tautology.from(
+      isFunctional,
+      inRelDomain,
+      appDef
+    )
+    val pairInF = thenHave(∃(z, in(pair(z, app(f, a)), f))) by RightExists
+
+    have(∀(t, in(t, relationRange(f)) <=> ∃(z, in(pair(z, t), f)))) by InstantiateForall(relationRange(f))(
+      relationRange.definition of (r := f)
+    )
+    val rangeDef = thenHave(in(app(f, a), relationRange(f)) <=> ∃(z, in(pair(z, app(f, a)), f))) by InstantiateForall(app(f, a))
+
+    val appInRange = have(in(app(f, a), relationRange(f))) by Tautology.from(rangeDef, pairInF)
+
+    have(subset(relationRange(f), y)) by Weakening(functionImpliesRangeSubsetOfCodomain)
+    thenHave(∀(z, in(z, relationRange(f)) ==> in(z, y))) by Substitution.ApplyRules(subsetAxiom of (x := relationRange(f)))
+    thenHave(in(app(f, a), relationRange(f)) ==> in(app(f, a), y)) by InstantiateForall(app(f, a))
+
+    have(thesis) by Tautology.from(appInRange, lastStep)
+  }
+
+  val constantFunctionApplication = Theorem(
+    in(a, x) |- app(constantFunction(x, t), a) === t
+  ) {
+    assume(in(a, x))
+    have(functionFrom(constantFunction(x, t), x, singleton(t))) by Weakening(constantFunctionFunctionFrom)
+
+    have(in(app(constantFunction(x, t), a), singleton(t))) by Tautology.from(
+      functionFromApplication of (f := constantFunction(x, t), y := singleton(t)),
+      lastStep
+    )
+
+    have(thesis) by Tautology.from(
+      singletonHasNoExtraElements of (y := app(constantFunction(x, t), a), x := t),
+      lastStep
+    )
   }
 
   /**
@@ -201,7 +386,7 @@ object Test extends lisa.Main {
   }
 
   val sigmaIsCartesianProductWhenBIsConstant = Theorem(
-    ∀(a, in(a, A) ==> (app(f, a) === B)) |- Sigma(A, f) === cartesianProduct(A, B)
+    Sigma(A, constantFunction(A, t)) === cartesianProduct(A, t)
   ) {
     sorry
   }
@@ -326,13 +511,7 @@ object Test extends lisa.Main {
   }
 
   val piIsSetOfFunctionsWhenBIsConstant = Theorem(
-    ∀(a, in(a, A) ==> (app(f, a) === B)) |- Pi(A, f) === setOfFunctions(A, B)
-  ) {
-    sorry
-  }
-
-  val inPiMeansSubsetOfSigma = Theorem(
-    in(f, Pi(A, B)) |- subset(f, Sigma(A, B))
+    Pi(A, constantFunction(A, t)) === setOfFunctions(A, t)
   ) {
     sorry
   }
