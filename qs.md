@@ -1,0 +1,3 @@
+- no (inductive) recursion?
+- is there some pretty printer for theorems? Scala syntax is not very readable -> there is, but it outputs it in scala syntax
+- when doing substitution when recalling a theorem I have to name the variable exactly. Can i just refer to that name without creating a variable?

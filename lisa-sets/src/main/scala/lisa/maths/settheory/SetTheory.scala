@@ -17,8 +17,6 @@ import scala.collection.immutable.{Map => ScalaMap}
  * [[https://link.springer.com/book/10.1007/3-540-44761-X]]
  */
 object SetTheory extends lisa.Main {
-  export lisa.maths.settheory.functions.Functions.*
-
   // var defs
   private val w = variable
   private val x = variable
@@ -2059,6 +2057,26 @@ object SetTheory extends lisa.Main {
   }
 
   /**
+   * Theorem --- the relation domain of the empty set is the empty set.
+   */
+  val domainOfEmptySetIsEmpty = Theorem(
+    relationDomain(∅) === ∅
+  ) {
+    have(∀(t, in(t, relationDomain(∅)) <=> ∃(a, in(pair(t, a), ∅)))) by InstantiateForall(relationDomain(∅))(
+      relationDomain.definition of (r := ∅)
+    )
+    val domainDef = thenHave(in(t, relationDomain(∅)) <=> ∃(a, in(pair(t, a), ∅))) by InstantiateForall(t) // todo: check if can be simplified with shortDefinition
+    val contraPosDomainDef = have(!in(t, relationDomain(∅)) <=> ∀(a, !in(pair(t, a), ∅))) by Tautology.from(domainDef)
+    have(!in(pair(t, a), ∅)) by Tautology.from(emptySetAxiom of (x := pair(t, a)))
+    val nothingInEmpty = thenHave(∀(a, !in(pair(t, a), ∅))) by RightForall
+
+    have(!in(t, relationDomain(∅))) by Tautology.from(nothingInEmpty, contraPosDomainDef)
+    thenHave(∀(t, !in(t, relationDomain(∅)))) by RightForall
+
+    have(thesis) by Tautology.from(lastStep, setWithNoElementsIsEmpty of (x := relationDomain(∅)))
+  }
+
+  /**
    * (Binary) Relation Field --- The union of the domain and range of a
    * relation, or the set of all elements related by `r`.
    *
@@ -2127,6 +2145,24 @@ object SetTheory extends lisa.Main {
     have(forall(t, in(t, r) ==> in(t, cartesianProduct(a, b)))) by Tautology.from(relationBetween.definition, subsetAxiom of (x -> r, y -> cartesianProduct(a, b)))
     thenHave(in(pair(x, y), r) ==> in(pair(x, y), cartesianProduct(a, b))) by InstantiateForall(pair(x, y))
     have(thesis) by Tautology.from(lastStep, pairInCartesianProduct of (x -> a, y -> b, a -> x, b -> y))
+  }
+
+  /**
+   * Theorem --- A cartesian product is a relation
+   *
+   * For any two sets `x` and `y`, their cartesian product form a relation.
+   */
+  val cartesianProductIsRelation = Theorem(
+    relation(cartesianProduct(x, y))
+  ) {
+    have(relationBetween(cartesianProduct(x, y), x, y)) by Tautology.from(
+      subsetReflexivity of (x := cartesianProduct(x, y)),
+      relationBetween.definition of (r := cartesianProduct(x, y), a := x, b := y)
+    )
+    thenHave(∃(b, relationBetween(cartesianProduct(x, y), x, b))) by RightExists
+    val relationSpec = thenHave(∃(a, ∃(b, relationBetween(cartesianProduct(x, y), a, b)))) by RightExists
+
+    have(thesis) by Tautology.from(relationSpec, relation.definition of (r := cartesianProduct(x, y)))
   }
 
   /**
@@ -2322,7 +2358,7 @@ object SetTheory extends lisa.Main {
   // x <= y, y <= x |- x = y
 
   /**
-   * Theorem ---  Subset reflexivity
+   * Theorem --- Subset reflexivity
    *
    * Every set is a [[subset]] of itself. In other words, the [[subset]]
    * predicate induces a [[reflexive]] [[relation]] on sets.
@@ -2333,6 +2369,35 @@ object SetTheory extends lisa.Main {
     val subdef = have(subset(x, x) <=> ∀(z, ⊤)) by Restate.from(subsetAxiom of (y -> x))
     thenHave(subset(x, x) <=> ⊤) by Substitution.ApplyRules(closedFormulaUniversal)
     thenHave(thesis) by Restate
+  }
+
+  /**
+   * Theorem --- Element in its power set
+   *
+   * Every set is inside its [[powerSet]].
+   */
+  val elemInItsPowerSet = Theorem(
+    in(x, powerSet(x))
+  ) {
+    have(thesis) by Tautology.from(powerAxiom of (y := x), subsetReflexivity)
+  }
+
+  /**
+   * Lemma --- The power set of the empty set is the set containing the empty set.
+   */
+  val powerSetEmptySet = Lemma(
+    powerSet(∅) === singleton(∅)
+  ) {
+    val powerAx = have(in(x, powerSet(∅)) <=> subset(x, ∅)) by Weakening(powerAxiom of (y := ∅))
+
+    have(in(x, powerSet(∅)) <=> in(x, singleton(∅))) by Tautology.from(
+      powerAx,
+      emptySetIsItsOwnOnlySubset,
+      singletonHasNoExtraElements of (y := x, x := ∅)
+    )
+    val ext = thenHave(∀(x, in(x, powerSet(∅)) <=> in(x, singleton(∅)))) by RightForall
+
+    have(thesis) by Tautology.from(ext, extensionalityAxiom of (x := powerSet(∅), y := singleton(∅)))
   }
 
   /**

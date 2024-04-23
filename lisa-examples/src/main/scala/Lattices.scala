@@ -1,11 +1,25 @@
 object Lattices extends lisa.Main {
+  import lisa.maths.settheory.SetTheory.*
+  import lisa.maths.settheory.functions.*
 
   val x = variable
   val P = predicate[1]
-  val f = function[1]
+
+  val t = variable
+  val p = variable
+  val a = variable
+  val b = variable
+  val A = variable
+  val B = variable
+  val f = variable
+  val g = variable
+  val r = variable
+  val fg = function[1]
+  private val schemPred = predicate[1]
+  private val h = formulaVariable
 
   val fixedPointDoubleApplication = Theorem(
-    ∀(x, P(x) ==> P(f(x))) |- P(x) ==> P(f(f(x)))
+    ∀(x, P(x) ==> P(fg(x))) |- P(x) ==> P(fg(fg(x)))
   ) {
     sorry
   }
@@ -63,6 +77,52 @@ object Lattices extends lisa.Main {
 
   val joinAssociative = Theorem((x u (y u z)) === ((x u y) u z)) {
     sorry
+  }
+
+  /**
+   * Theorem --- The application of a function is in its codomain.
+   *
+   *    `f ∈ x → y /\ a ∈ x |- f(a) ∈ y`
+   */
+  val functionFromApplisasdcation = Theorem(
+    // functionFrom(f, x, y) /\ in(a, x) |- in(app(f, a), y)
+    functional(emptySet)
+    // in(x, y)
+  ) {
+    sorry
+    //   val funcFrom = assume(functionFrom(f, x, y))
+    //   val inDomain = assume(in(a, x))
+//
+    //   val isFunctional = have(functional(f)) by Tautology.from(funcFrom, functionFromImpliesFunctional)
+    //   val relDomainEq = have(relationDomain(f) === x) by Tautology.from(funcFrom, functionFromImpliesDomainEq)
+    //   val inRelDomain = have(in(a, relationDomain(f))) by Substitution.ApplyRules(relDomainEq)(inDomain)
+//
+    //   val appDef = have(
+    //     ((functional(f) /\ in(a, relationDomain(f))) ==> in(pair(a, app(f, a)), f))
+    //       /\ ((!functional(f) \/ !in(a, relationDomain(f))) ==> (app(f, a) === ∅))
+    //   ) by InstantiateForall(app(f, a))(
+    //     app.definition of (x := a)
+    //   )
+//
+    //   have(in(pair(a, app(f, a)), f)) by Tautology.from(
+    //     isFunctional,
+    //     inRelDomain,
+    //     appDef
+    //   )
+    //   val pairInF = thenHave(∃(z, in(pair(z, app(f, a)), f))) by RightExists
+//
+    //   have(∀(t, in(t, relationRange(f)) <=> ∃(z, in(pair(z, t), f)))) by InstantiateForall(relationRange(f))(
+    //     relationRange.definition of (r := f)
+    //   )
+    //   val rangeDef = thenHave(in(app(f, a), relationRange(f)) <=> ∃(z, in(pair(z, app(f, a)), f))) by InstantiateForall(app(f, a))
+//
+    //   val appInRange = have(in(app(f, a), relationRange(f))) by Tautology.from(rangeDef, pairInF)
+//
+    //   have(subset(relationRange(f), y)) by Weakening(functionImpliesRangeSubsetOfCodomain)
+    //   thenHave(∀(z, in(z, relationRange(f)) ==> in(z, y))) by Substitution.ApplyRules(subsetAxiom of (x := relationRange(f)))
+    //   thenHave(in(app(f, a), relationRange(f)) ==> in(app(f, a), y)) by InstantiateForall(app(f, a))
+//
+    //   have(thesis) by Tautology.from(appInRange, lastStep)
   }
 
   // Tedious, isn't it

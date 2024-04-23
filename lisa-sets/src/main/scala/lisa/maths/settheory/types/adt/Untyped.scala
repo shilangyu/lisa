@@ -17,10 +17,11 @@ import Helpers.{/\, \/, ===}
 import ADTDefinitions.*
 import ADTHelperTheorems as ADTThm
 import ADTThm.{N, pair, pairExtensionality}
-import lisa.maths.settheory.types.TypeLib.{ |=>}
-import lisa.maths.settheory.types.TypeSystem.{ :: }
+import lisa.maths.settheory.types.TypeLib.{|=>}
+import lisa.maths.settheory.types.TypeSystem.{::}
 import lisa.maths.Quantifiers.{universalEquivalenceDistribution}
 import lisa.fol.FOL.Variable
+import lisa.maths.settheory.functions.*
 
 /**
  * Helpers for constructors
@@ -37,9 +38,9 @@ private object Constructors {
  * Syntactic set theoretical interpretation of a constructor for an algebraic data type.
  * In set theory, a constructor is a tuple containing the arguments it has been applied to, in addition to a tag
  * uniquely identifying it.
- * 
+ *
  * E.g. `cons(1, nil())` is represented as `(tagcons, (1, ((tagnil, ∅), ∅)))`
- * 
+ *
  * Constructors injectivity is proved within this class.
  *
  * @constructor creates a new constructor out of a user specification
@@ -48,10 +49,10 @@ private object Constructors {
  * @param variables2 alternative set of variables to avoid capture issues
  */
 private class SyntacticConstructor(
-  val specification: Seq[ConstructorArgument], 
-  val variables1: Seq[Variable], 
-  val variables2: Seq[Variable],
-  ) {
+    val specification: Seq[ConstructorArgument],
+    val variables1: Seq[Variable],
+    val variables2: Seq[Variable]
+) {
 
   /**
    * Unique identifier of this constructor
@@ -65,15 +66,15 @@ private class SyntacticConstructor(
   val tagTerm: Term = toTerm(tag)
 
   /**
-    * Sequence of variables used to represent the arguments of the constructor
-    */
+   * Sequence of variables used to represent the arguments of the constructor
+   */
   val variables: Seq[Variable] = variables1
 
   /**
    * Number of arguments that this constructor takes
    */
   val arity: Int = specification.length
-  
+
   /**
    * Sequence of variables of the constructor with their respective domains.
    */
@@ -102,18 +103,18 @@ private class SyntacticConstructor(
   def term(args: Seq[Term]): Term = pair(tagTerm, subterm(args))
 
   /**
-    * Internal representation of an instance of this constructor in which arguments are schematic variables.
-    */
+   * Internal representation of an instance of this constructor in which arguments are schematic variables.
+   */
   val term1: Term = term(variables1)
 
   /**
-    * Internal representation of an instance of this constructor in which arguments are an alternative set of schematic variables.
-    */
+   * Internal representation of an instance of this constructor in which arguments are an alternative set of schematic variables.
+   */
   val term2: Term = term(variables2)
 
   /**
-    * Internal representation of an instance of this constructor in which arguments are schematic variables.
-    */
+   * Internal representation of an instance of this constructor in which arguments are schematic variables.
+   */
   val term: Term = term1
 
   /**
@@ -131,7 +132,7 @@ private class SyntacticConstructor(
   val subterm1: Term = subterm(variables1)
 
   /**
-   * Internal representation of an instance of this constructor without the tag, in which arguments are an alternative set 
+   * Internal representation of an instance of this constructor without the tag, in which arguments are an alternative set
    * of schematic variables.
    */
   val subterm2: Term = subterm(variables2)
@@ -200,30 +201,30 @@ private class SyntacticConstructor(
             (updatedPulledVars1, updatedRemainingVars1, updatedPulledVars2, updatedRemainingVars2, newFact)
           )
       }
-    
+
 }
 
 /**
-  * Syntactic set theoretical interpretation of an algebraic data type. That is the least set closed under [[SyntacticConstructor]].
-  * 
-  * E.g. list is the smallest set containing nil and closed under the syntactic operation cons.
-  * 
-  * Injectivity between different constructors, introduction rules and structural induction are proved within this class.
-  *
-  * @constructor creates a new algebraic data type out of a user specification.
-  * @param line the line at which the ADT is defined. Usually fetched automatically by the compiler. 
-  * Used for error reporting
-  * @param file the file in which the ADT is defined. Usually fetched automatically by the compiler. 
-  * Used for error reporting
-  * @param name the name of the ADT
-  * @param constructors constructors of the ADT
-  * @param typeVariables type variables used in the definition of this ADT
-  */
+ * Syntactic set theoretical interpretation of an algebraic data type. That is the least set closed under [[SyntacticConstructor]].
+ *
+ * E.g. list is the smallest set containing nil and closed under the syntactic operation cons.
+ *
+ * Injectivity between different constructors, introduction rules and structural induction are proved within this class.
+ *
+ * @constructor creates a new algebraic data type out of a user specification.
+ * @param line the line at which the ADT is defined. Usually fetched automatically by the compiler.
+ * Used for error reporting
+ * @param file the file in which the ADT is defined. Usually fetched automatically by the compiler.
+ * Used for error reporting
+ * @param name the name of the ADT
+ * @param constructors constructors of the ADT
+ * @param typeVariables type variables used in the definition of this ADT
+ */
 private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: sourcecode.File)(
-  val name: String, 
-  val constructors: Seq[SyntacticConstructor],
-  val typeVariables: Variable ** N,
-  ) {
+    val name: String,
+    val constructors: Seq[SyntacticConstructor],
+    val typeVariables: Variable ** N
+) {
 
   /**
    * Sequence of type variables used in the definition of this ADT
@@ -340,7 +341,6 @@ private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: source
    */
   private def isInIntroductionFunctionImage(s: Term)(y: Term): Formula = isConstructor(y, s) \/ in(y, s)
 
-
   /**
    * Lemma --- The introduction function is monotonic with respect to set inclusion.
    *
@@ -396,7 +396,6 @@ private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: source
     thenHave(subsetST |- isConstructorXS ==> isConstructorXT) by RightImplies
     have(thesis) by Cut(lastStep, ADTThm.unionPreimageMonotonic of (P := lambda(s, isConstructorXS)))
   }
-
 
   /**
    * Lemma --- Every constructor is in the image of the introduction function.
@@ -644,7 +643,9 @@ private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: source
 
     have((hIsTheHeightFunction, in(n, N)) |- in(x, app(h, successor(n))) <=> restrHeightNotEmpty /\ isInIntroductionFunctionImage(app(h, n))(x)) by Cut(unionRangeRestr, lastStep)
 
-    have((hIsTheHeightFunction, in(n, N), restrHeightNotEmpty) |- in(x, app(h, successor(n))) <=> isInIntroductionFunctionImage(app(h, n))(x)) by Apply(ADTThm.equivalenceAnd of (p2 := restrHeightNotEmpty))
+    have((hIsTheHeightFunction, in(n, N), restrHeightNotEmpty) |- in(x, app(h, successor(n))) <=> isInIntroductionFunctionImage(app(h, n))(x)) by Apply(
+      ADTThm.equivalenceAnd of (p2 := restrHeightNotEmpty)
+    )
       .on(lastStep)
 
     have(thesis) by Cut(restrHeightNotEmptyLemma, lastStep)
@@ -988,7 +989,7 @@ private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: source
                 val left = have((hIsTheHeightFunction, in(n, N), constructorVarsInHN) |- constructorVarsInHSuccN) by RightAnd(liftHeightAndSequence: _*)
                 val right = have(x === c.term |- x === c.term) by Hypothesis
 
-                have((hIsTheHeightFunction, in(n, N), constructorVarsInHN, (x === c.term)) |- constructorVarsInHSuccN /\ (x === c.term )) by RightAnd(
+                have((hIsTheHeightFunction, in(n, N), constructorVarsInHN, (x === c.term)) |- constructorVarsInHSuccN /\ (x === c.term)) by RightAnd(
                   left,
                   right
                 )
@@ -1100,7 +1101,6 @@ private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: source
                 have(thesis) by Cut(consVarL, lastStep)
               }
 
-
               // STEP 2.1.2: Prove that if xi, ..., xj ∈ height(n) then P(c(x1, ..., xn)).
               have((hIsTheHeightFunction, constructorPrecondition, in(n, N), inductionFormulaN, constructorVarsInHN) |- constructorPrecondition) by Restate
 
@@ -1155,7 +1155,6 @@ private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: source
               thenHave((hIsTheHeightFunction, structuralInductionPreconditions, in(n, N), inductionFormulaN, isConstructor(c, x, app(h, n))) |- P(x)) by Weakening
             ).toSeq
 
-
           have((hIsTheHeightFunction, structuralInductionPreconditions, in(n, N), inductionFormulaN, isConstructor(x, app(h, n))) |- P(x)) by LeftOr(orSeq: _*)
       }
 
@@ -1183,7 +1182,10 @@ private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: source
     thenHave((hIsTheHeightFunction, structuralInductionPreconditions, in(n, N)) |- in(x, app(h, n)) ==> P(x)) by InstantiateForall(x)
     thenHave((hIsTheHeightFunction, structuralInductionPreconditions, in(n, N) /\ in(x, app(h, n))) |- P(x)) by Restate
     val exImpliesP = thenHave((hIsTheHeightFunction, structuralInductionPreconditions, exists(n, in(n, N) /\ in(x, app(h, n)))) |- P(x)) by LeftExists
-    have((hIsTheHeightFunction, in(x, term)) |- exists(n, in(n, N) /\ in(x, app(h, n)))) by Cut(termHasHeight, ADTThm.equivalenceApply of (p1 := in(x, term), p2 := exists(n, in(n, N) /\ in(x, app(h, n)))))
+    have((hIsTheHeightFunction, in(x, term)) |- exists(n, in(n, N) /\ in(x, app(h, n)))) by Cut(
+      termHasHeight,
+      ADTThm.equivalenceApply of (p1 := in(x, term), p2 := exists(n, in(n, N) /\ in(x, app(h, n))))
+    )
 
     have((hIsTheHeightFunction, structuralInductionPreconditions, in(x, term)) |- P(x)) by Cut(lastStep, exImpliesP)
     thenHave((exists(h, hIsTheHeightFunction), structuralInductionPreconditions, in(x, term)) |- P(x)) by LeftExists
@@ -1195,558 +1197,559 @@ private class SyntacticADT[N <: Arity](using line: sourcecode.Line, file: source
 }
 
 /**
-  * Semantic set theoretical interpretation of a constructor for an algebraic data type.
-  * That is a function from the arguments' domains to the set of instances of the algebraic data type.
-  * 
-  *   `c : T1 -> ... -> Tn -> ADT`
-  * 
-  * Since polymorphism is supported, this function is parametrized by the type variables appearing inside
-  * the specification of the ADT. In this sense, a constructor is a class function whose parameters are 
-  * type variables and whose body is the set theoretic function detailed above. With polymorphism, the signature
-  * thus becomes:
-  * 
-  *   `c(X1, ..., Xn) : T1(X1, ..., Xn) -> ... -> Tn(X1, ..., Xn) -> ADT(X1, ..., Xn)`
-  * 
-  * Injectivity and introduction rule are proven within this class.
-  *
-  * @constructor generates a class function for this constructor
-  * @param line the line at which this constructor is defined. Usually fetched automatically by the compiler. 
-  * Used for error reporting
-  * @param file the file in which this constructor is defined. Usually fetched automatically by the compiler. 
-  * Used for error reporting
-  * @param name the name of this constructor
-  * @param underlying the syntactic constructor
-  * @param adt the algebraic data type to which this constructor belongs
-  */
+ * Semantic set theoretical interpretation of a constructor for an algebraic data type.
+ * That is a function from the arguments' domains to the set of instances of the algebraic data type.
+ *
+ *   `c : T1 -> ... -> Tn -> ADT`
+ *
+ * Since polymorphism is supported, this function is parametrized by the type variables appearing inside
+ * the specification of the ADT. In this sense, a constructor is a class function whose parameters are
+ * type variables and whose body is the set theoretic function detailed above. With polymorphism, the signature
+ * thus becomes:
+ *
+ *   `c(X1, ..., Xn) : T1(X1, ..., Xn) -> ... -> Tn(X1, ..., Xn) -> ADT(X1, ..., Xn)`
+ *
+ * Injectivity and introduction rule are proven within this class.
+ *
+ * @constructor generates a class function for this constructor
+ * @param line the line at which this constructor is defined. Usually fetched automatically by the compiler.
+ * Used for error reporting
+ * @param file the file in which this constructor is defined. Usually fetched automatically by the compiler.
+ * Used for error reporting
+ * @param name the name of this constructor
+ * @param underlying the syntactic constructor
+ * @param adt the algebraic data type to which this constructor belongs
+ */
 private class SemanticConstructor[N <: Arity](using line: sourcecode.Line, file: sourcecode.File)(
-  val name: String,
-  val underlying: SyntacticConstructor,
-  val adt: SyntacticADT[N],
+    val name: String,
+    val underlying: SyntacticConstructor,
+    val adt: SyntacticADT[N]
 ) {
-   /**
-     * Full name of this constructor, i.e. concatenation of the ADT name and this constructor name.
-     */
-    val fullName: String = s"${adt.name}/${name}"
 
-    /**
-     * Type variables that may appear in the signature of this constructor.
-     */
-    val typeVariables: Variable ** N = adt.typeVariables
+  /**
+   * Full name of this constructor, i.e. concatenation of the ADT name and this constructor name.
+   */
+  val fullName: String = s"${adt.name}/${name}"
 
-    /**
-      * Sequence of type variables that may appear in the signature of this constructor.
-      */
-    val typeVariablesSeq: Seq[Variable] = adt.typeVariablesSeq
+  /**
+   * Type variables that may appear in the signature of this constructor.
+   */
+  val typeVariables: Variable ** N = adt.typeVariables
 
-    /**
-      * Number of type variables in the signature of this constructor.
-      */
-    val typeArity: N = adt.typeArity
+  /**
+   * Sequence of type variables that may appear in the signature of this constructor.
+   */
+  val typeVariablesSeq: Seq[Variable] = adt.typeVariablesSeq
 
-    /**
-     * Variables used for constructor arguments.
-     */
-    val variables: Seq[Variable] = underlying.variables
+  /**
+   * Number of type variables in the signature of this constructor.
+   */
+  val typeArity: N = adt.typeArity
 
-    /**
-     * Variables used for constructor arguments.
-     */
-    val variables1: Seq[Variable] = underlying.variables1
+  /**
+   * Variables used for constructor arguments.
+   */
+  val variables: Seq[Variable] = underlying.variables
 
-    /**
-     * Alternative set of variables used for constructor arguments.
-     */
-    val variables2: Seq[Variable] = underlying.variables2
+  /**
+   * Variables used for constructor arguments.
+   */
+  val variables1: Seq[Variable] = underlying.variables1
 
-    /**
-     * Set of variables for this constructor with their respective domain or a 
-     * special symbol in case the domain is the ADT.
-     * 
-     * @param vars variables
-     */
-    def syntacticSignature(vars: Seq[Variable]): Seq[(Variable, ConstructorArgument)] = 
-      vars.zip(underlying.specification)
+  /**
+   * Alternative set of variables used for constructor arguments.
+   */
+  val variables2: Seq[Variable] = underlying.variables2
 
-    /**
-     * Variables of this constructor with their respective domain or a special symbol in case the domain is the ADT.
-     */
-    val syntacticSignature: Seq[(Variable, ConstructorArgument)] = underlying.signature
+  /**
+   * Set of variables for this constructor with their respective domain or a
+   * special symbol in case the domain is the ADT.
+   *
+   * @param vars variables
+   */
+  def syntacticSignature(vars: Seq[Variable]): Seq[(Variable, ConstructorArgument)] =
+    vars.zip(underlying.specification)
 
-    /**
-     * Constructor arguments with their respective domains.
-     * 
-     * @param vars this constructor arguments
-     */
-    def semanticSignature(vars: Seq[Variable]): Seq[(Variable, Term)] = vars.zip(underlying.specification.map(_.getOrElse(adt.term)))
+  /**
+   * Variables of this constructor with their respective domain or a special symbol in case the domain is the ADT.
+   */
+  val syntacticSignature: Seq[(Variable, ConstructorArgument)] = underlying.signature
 
-    /**
-     * Variables of this constructor with their respective domains.
-     */
-    val semanticSignature: Seq[(Variable, Term)] = semanticSignature(variables)
+  /**
+   * Constructor arguments with their respective domains.
+   *
+   * @param vars this constructor arguments
+   */
+  def semanticSignature(vars: Seq[Variable]): Seq[(Variable, Term)] = vars.zip(underlying.specification.map(_.getOrElse(adt.term)))
 
-    /**
-     * Variables of this constructor with their respective domains.
-     */
-    val semanticSignature1: Seq[(Variable, Term)] = semanticSignature
+  /**
+   * Variables of this constructor with their respective domains.
+   */
+  val semanticSignature: Seq[(Variable, Term)] = semanticSignature(variables)
 
-    /**
-     * Alternative set of variables of this constructor with their respective domain.
-     */
-    val semanticSignature2: Seq[(Variable, Term)] = semanticSignature(variables2)
+  /**
+   * Variables of this constructor with their respective domains.
+   */
+  val semanticSignature1: Seq[(Variable, Term)] = semanticSignature
 
-    /**
-     * Type of this constructor.
-     */
-    val typ: Term = semanticSignature.unzip._2.foldRight[Term](adt.term)((a, b) => a |=> b)
+  /**
+   * Alternative set of variables of this constructor with their respective domain.
+   */
+  val semanticSignature2: Seq[(Variable, Term)] = semanticSignature(variables2)
 
-    /**
-     * Arity of this constructor.
-     */
-    val arity: Int = variables.size
+  /**
+   * Type of this constructor.
+   */
+  val typ: Term = semanticSignature.unzip._2.foldRight[Term](adt.term)((a, b) => a |=> b)
 
-    /**
-     * Internal representation of this constructor (i.e. as a tuple).
-     */
-    val structuralTerm: Term = underlying.term
-    /**
-    * Internal representation of this constructor (i.e. as a tuple).
-    */
-    val structuralTerm1: Term = underlying.term1
-    /**
-    * Internal representation of this constructor (i.e. as a tuple) with an alternative set of variables.
-    */
-    val structuralTerm2: Term = underlying.term2
+  /**
+   * Arity of this constructor.
+   */
+  val arity: Int = variables.size
 
-    /**
-     * Definition of this constructor.
-     *
-     * Formally it is the only function whose codomain is the ADT such that for all variables x1 :: S1, ...,xn :: Sn
-     * c * x1 * ... * xn = (tagc, (x1, (..., (xn, ∅)...))
-     */
-    private val untypedDefinition = (c :: typ) /\ forallSeq(variables, wellTypedFormula(semanticSignature) ==> (appSeq(c)(variables) === structuralTerm))
+  /**
+   * Internal representation of this constructor (i.e. as a tuple).
+   */
+  val structuralTerm: Term = underlying.term
 
-    /**
-     * Lemma --- Uniqueness of this constructor.
-     *
-     *     ` ∃!c. c ∈ T1 -> ... -> Tn -> ADT /\ ∀x1, ..., xn. c * x1 * ...* xn = (tagc, (x1, (..., (xn, ∅)...))`
-     */
-    private val uniqueness = Axiom(existsOne(c, untypedDefinition))
+  /**
+   * Internal representation of this constructor (i.e. as a tuple).
+   */
+  val structuralTerm1: Term = underlying.term1
 
-    /**
-     * Class function representing this constructor
-     */
-    private val classFunction = FunctionDefinition[N](fullName, line.value, file.value)(typeVariablesSeq, c, untypedDefinition, uniqueness).label
+  /**
+   * Internal representation of this constructor (i.e. as a tuple) with an alternative set of variables.
+   */
+  val structuralTerm2: Term = underlying.term2
 
-    /**
-      * Identifier of this constructor.
-      */
-    val id: Identifier = classFunction.id
+  /**
+   * Definition of this constructor.
+   *
+   * Formally it is the only function whose codomain is the ADT such that for all variables x1 :: S1, ...,xn :: Sn
+   * c * x1 * ... * xn = (tagc, (x1, (..., (xn, ∅)...))
+   */
+  private val untypedDefinition = (c :: typ) /\ forallSeq(variables, wellTypedFormula(semanticSignature) ==> (appSeq(c)(variables) === structuralTerm))
 
-    /**
-      * This constructor in which type variables are instantiated.
-      *
-      * @param args the instances of this constructor's type variables
-      */
-    def term(args: Seq[Term]): Term = classFunction.applySeq(args)
+  /**
+   * Lemma --- Uniqueness of this constructor.
+   *
+   *     ` ∃!c. c ∈ T1 -> ... -> Tn -> ADT /\ ∀x1, ..., xn. c * x1 * ...* xn = (tagc, (x1, (..., (xn, ∅)...))`
+   */
+  private val uniqueness = Axiom(existsOne(c, untypedDefinition))
 
-    /**
-     * Constructor where type variables are instantiated with schematic variables.
-     */
-    private val term: Term = term(typeVariablesSeq)
+  /**
+   * Class function representing this constructor
+   */
+  private val classFunction = FunctionDefinition[N](fullName, line.value, file.value)(typeVariablesSeq, c, untypedDefinition, uniqueness).label
 
-    /**
-     * Constructor where type variables are instantiated with schematic variables and arguments instantiated.
-     * 
-     * @param args the instances of this constructor arguments
-     */
-    def appliedTerm(args: Seq[Term]): Term = appSeq(term)(args)
+  /**
+   * Identifier of this constructor.
+   */
+  val id: Identifier = classFunction.id
 
-    /**
-     * Constructor where type variables and arguments are instantiated with schematic variables.
-     */
-    val appliedTerm: Term = appliedTerm(variables)
+  /**
+   * This constructor in which type variables are instantiated.
+   *
+   * @param args the instances of this constructor's type variables
+   */
+  def term(args: Seq[Term]): Term = classFunction.applySeq(args)
 
-    /**
-     * Constructor where type variables and arguments are instantiated with schematic variables.
-     */
-    val appliedTerm1: Term = appliedTerm
+  /**
+   * Constructor where type variables are instantiated with schematic variables.
+   */
+  private val term: Term = term(typeVariablesSeq)
 
-    /**
-     * Constructor where type variables and arguments are instantiated with schematic variables.
-     * Arguments variables are however drawn from an alternative set of variables.
-     */
-    val appliedTerm2: Term = appliedTerm(variables2)
+  /**
+   * Constructor where type variables are instantiated with schematic variables and arguments instantiated.
+   *
+   * @param args the instances of this constructor arguments
+   */
+  def appliedTerm(args: Seq[Term]): Term = appSeq(term)(args)
 
-    /**
-     * Lemma --- This constructor is equal to its internal representation.
-     *
-     *     `∀x1, ..., xn. c * x1 * ... * xn = (tagc, (x1, (..., (xn, ∅)...))`
-     */
-    val shortDefinition = Lemma(forallSeq(variables, wellTypedFormula(semanticSignature) ==> (appliedTerm === structuralTerm))) {
-      have(forall(c, (term === c) <=> untypedDefinition)) by Exact(classFunction.definition)
-      thenHave((term === term) <=> ((term :: typ) /\ forallSeq(variables, wellTypedFormula(semanticSignature) ==> (appliedTerm === structuralTerm)))) by InstantiateForall(term)
-      thenHave(thesis) by Weakening
-    }
+  /**
+   * Constructor where type variables and arguments are instantiated with schematic variables.
+   */
+  val appliedTerm: Term = appliedTerm(variables)
 
-    /**
-     * Lemma --- Introduction rule for this constructor.
-     * 
-     *    `∀A1, ..., Am. c(X1, ..., Xm) ∈ T1(X1, ..., Xm) -> ... -> Tn(X1, ..., Xm) -> ADT(X1, ..., Xm)`
-     * 
-     * where Ai are the type variables of the ADT and Ti are domains of this constructor arguments.
-     * 
-     * e.g. `∀T. nil(T) ∈ list(T)` and  `∀T. cons(T) ∈ T -> list(T) -> list(T)`
-     */
-    val intro = Lemma(forallSeq(typeVariablesSeq, term :: typ)) {
-      have(forall(c, (term === c) <=> untypedDefinition)) by Exact(classFunction.definition)
-      thenHave((term === term) <=> ((term :: typ) /\ forallSeq(variables, wellTypedFormula(semanticSignature) ==> (appliedTerm === structuralTerm)))) by InstantiateForall(term)
-      thenHave(term :: typ) by Weakening
-      thenHave(thesis) by QuantifiersIntro(typeVariablesSeq)
-    }
+  /**
+   * Constructor where type variables and arguments are instantiated with schematic variables.
+   */
+  val appliedTerm1: Term = appliedTerm
 
-    /**
-     * Theorem --- Injectivity of constructors.
-     *
-     *    Two instances of this constructor are equal if and only if all of their arguments are pairwise equal
-     *
-     * e.g. Cons(head1, tail1) === Cons(head2, tail2) <=> head1 === head2 /\ tail1 === tail2
-     */
-    lazy val injectivity = 
-      val vars1WellTyped: Set[Formula] = wellTypedSet(semanticSignature1)
-      val vars2WellTyped: Set[Formula] = wellTypedSet(semanticSignature2)
+  /**
+   * Constructor where type variables and arguments are instantiated with schematic variables.
+   * Arguments variables are however drawn from an alternative set of variables.
+   */
+  val appliedTerm2: Term = appliedTerm(variables2)
 
-      if arity == 0 then
-        Lemma(appliedTerm1 === appliedTerm2) {
-          have(thesis) by RightRefl
-        }
-      else
-        Lemma(vars1WellTyped ++ vars2WellTyped |- simplify((appliedTerm1 === appliedTerm2) <=> (variables1 === variables2))) {
+  /**
+   * Lemma --- This constructor is equal to its internal representation.
+   *
+   *     `∀x1, ..., xn. c * x1 * ... * xn = (tagc, (x1, (..., (xn, ∅)...))`
+   */
+  val shortDefinition = Lemma(forallSeq(variables, wellTypedFormula(semanticSignature) ==> (appliedTerm === structuralTerm))) {
+    have(forall(c, (term === c) <=> untypedDefinition)) by Exact(classFunction.definition)
+    thenHave((term === term) <=> ((term :: typ) /\ forallSeq(variables, wellTypedFormula(semanticSignature) ==> (appliedTerm === structuralTerm)))) by InstantiateForall(term)
+    thenHave(thesis) by Weakening
+  }
 
-          have(forallSeq(variables1, wellTypedFormula(semanticSignature1) ==> (appliedTerm1 === structuralTerm1))) by Restate.from(shortDefinition)
+  /**
+   * Lemma --- Introduction rule for this constructor.
+   *
+   *    `∀A1, ..., Am. c(X1, ..., Xm) ∈ T1(X1, ..., Xm) -> ... -> Tn(X1, ..., Xm) -> ADT(X1, ..., Xm)`
+   *
+   * where Ai are the type variables of the ADT and Ti are domains of this constructor arguments.
+   *
+   * e.g. `∀T. nil(T) ∈ list(T)` and  `∀T. cons(T) ∈ T -> list(T) -> list(T)`
+   */
+  val intro = Lemma(forallSeq(typeVariablesSeq, term :: typ)) {
+    have(forall(c, (term === c) <=> untypedDefinition)) by Exact(classFunction.definition)
+    thenHave((term === term) <=> ((term :: typ) /\ forallSeq(variables, wellTypedFormula(semanticSignature) ==> (appliedTerm === structuralTerm)))) by InstantiateForall(term)
+    thenHave(term :: typ) by Weakening
+    thenHave(thesis) by QuantifiersIntro(typeVariablesSeq)
+  }
 
-          variables1.foldLeft(lastStep)((fact, v) =>
-              fact.statement.right.head match
-                case Forall(_, phi) => thenHave(phi) by InstantiateForall(v)
-                case _ => throw UnreachableException
-            )
-          val tappTerm1Def = thenHave(vars1WellTyped |- appliedTerm1 === structuralTerm1) by Restate
+  /**
+   * Theorem --- Injectivity of constructors.
+   *
+   *    Two instances of this constructor are equal if and only if all of their arguments are pairwise equal
+   *
+   * e.g. Cons(head1, tail1) === Cons(head2, tail2) <=> head1 === head2 /\ tail1 === tail2
+   */
+  lazy val injectivity =
+    val vars1WellTyped: Set[Formula] = wellTypedSet(semanticSignature1)
+    val vars2WellTyped: Set[Formula] = wellTypedSet(semanticSignature2)
 
-          // println(forallSeq(variables1, wellTypedFormula(semanticSignature1) ==> (appliedTerm1 === structuralTerm1)))
-          // println(forallSeq(variables2, wellTypedFormula(semanticSignature2) ==> (appliedTerm2 === structuralTerm)))
-          have(forallSeq(variables2, wellTypedFormula(semanticSignature2) ==> (appliedTerm2 === structuralTerm2))) by Restate.from(shortDefinition)
+    if arity == 0 then
+      Lemma(appliedTerm1 === appliedTerm2) {
+        have(thesis) by RightRefl
+      }
+    else
+      Lemma(vars1WellTyped ++ vars2WellTyped |- simplify((appliedTerm1 === appliedTerm2) <=> (variables1 === variables2))) {
 
-          variables2.foldLeft(lastStep)((fact, v) =>
-              fact.statement.right.head match
-                case Forall(_, phi) => thenHave(phi) by InstantiateForall(v)
-                case _ => throw UnreachableException
-            )
-          val tappTerm2Def = thenHave(vars2WellTyped |- appliedTerm2 === structuralTerm2) by Restate
+        have(forallSeq(variables1, wellTypedFormula(semanticSignature1) ==> (appliedTerm1 === structuralTerm1))) by Restate.from(shortDefinition)
 
+        variables1.foldLeft(lastStep)((fact, v) =>
+          fact.statement.right.head match
+            case Forall(_, phi) => thenHave(phi) by InstantiateForall(v)
+            case _ => throw UnreachableException
+        )
+        val tappTerm1Def = thenHave(vars1WellTyped |- appliedTerm1 === structuralTerm1) by Restate
 
-          val s0 = have(vars2WellTyped + (appliedTerm1 === appliedTerm2) |- appliedTerm1 === structuralTerm2) by Cut(tappTerm2Def,
-            ADTThm.altEqualityTransitivity of (x := appliedTerm1, y := appliedTerm2, z := structuralTerm2))
-          have(vars1WellTyped + (appliedTerm1 === structuralTerm2) |- structuralTerm1 === structuralTerm2) by Cut(tappTerm1Def,
-            ADTThm.altEqualityTransitivity of (x := structuralTerm1, y := appliedTerm1, z := structuralTerm2))
-          have((vars1WellTyped ++ vars2WellTyped) + (appliedTerm1 === appliedTerm2) |- structuralTerm1 === structuralTerm2) by Cut(s0, lastStep)
-          val forward = thenHave(vars1WellTyped ++ vars2WellTyped |- (appliedTerm1 === appliedTerm2) ==> (structuralTerm1 === structuralTerm2)) by RightImplies
+        // println(forallSeq(variables1, wellTypedFormula(semanticSignature1) ==> (appliedTerm1 === structuralTerm1)))
+        // println(forallSeq(variables2, wellTypedFormula(semanticSignature2) ==> (appliedTerm2 === structuralTerm)))
+        have(forallSeq(variables2, wellTypedFormula(semanticSignature2) ==> (appliedTerm2 === structuralTerm2))) by Restate.from(shortDefinition)
 
-          val s1 = have(vars1WellTyped + (structuralTerm1 === structuralTerm2) |- appliedTerm1 === structuralTerm2) by Cut(tappTerm1Def,
-            ADTThm.altEqualityTransitivity of (x := appliedTerm1, y := structuralTerm1, z := structuralTerm2))
-          have(vars2WellTyped + (appliedTerm1 === structuralTerm2) |- appliedTerm1 === appliedTerm2) by Cut(tappTerm2Def,
-            ADTThm.altEqualityTransitivity of (x := appliedTerm1, y := structuralTerm2, z := appliedTerm2))
-          have((vars1WellTyped ++ vars2WellTyped) + (structuralTerm1 === structuralTerm2) |- appliedTerm1 === appliedTerm2) by Cut(s1, lastStep)
-          val backward = thenHave(vars1WellTyped ++ vars2WellTyped |- (structuralTerm1 === structuralTerm2) ==> (appliedTerm1 === appliedTerm2)) by RightImplies
+        variables2.foldLeft(lastStep)((fact, v) =>
+          fact.statement.right.head match
+            case Forall(_, phi) => thenHave(phi) by InstantiateForall(v)
+            case _ => throw UnreachableException
+        )
+        val tappTerm2Def = thenHave(vars2WellTyped |- appliedTerm2 === structuralTerm2) by Restate
 
-          val definitionUnfolding = have(vars1WellTyped ++ vars2WellTyped |- (appliedTerm1 === appliedTerm2) <=> (structuralTerm1 === structuralTerm2)) by RightIff(forward, backward)
-          have((appliedTerm1 === appliedTerm2) <=> (structuralTerm1 === structuralTerm2) |- (appliedTerm1 === appliedTerm2) <=> /\(variables1.zip(variables2).map(_ === _))) by Sorry
-          Cut(
-            underlying.injectivity,
-            ADTThm.equivalenceRewriting of (p1 := (appliedTerm1 === appliedTerm2), p2 := (structuralTerm1 === structuralTerm2), p3 := /\(variables1.zip(variables2).map(_ === _)))
-          )
-          have(thesis) by Cut(definitionUnfolding, lastStep)
-        }
+        val s0 = have(vars2WellTyped + (appliedTerm1 === appliedTerm2) |- appliedTerm1 === structuralTerm2) by Cut(
+          tappTerm2Def,
+          ADTThm.altEqualityTransitivity of (x := appliedTerm1, y := appliedTerm2, z := structuralTerm2)
+        )
+        have(vars1WellTyped + (appliedTerm1 === structuralTerm2) |- structuralTerm1 === structuralTerm2) by Cut(
+          tappTerm1Def,
+          ADTThm.altEqualityTransitivity of (x := structuralTerm1, y := appliedTerm1, z := structuralTerm2)
+        )
+        have((vars1WellTyped ++ vars2WellTyped) + (appliedTerm1 === appliedTerm2) |- structuralTerm1 === structuralTerm2) by Cut(s0, lastStep)
+        val forward = thenHave(vars1WellTyped ++ vars2WellTyped |- (appliedTerm1 === appliedTerm2) ==> (structuralTerm1 === structuralTerm2)) by RightImplies
 
-    
-    /**
-     * Case generated by this constructor when performing a proof by induction
-     */
-    lazy val inductiveCase: Formula =
-      syntacticSignature.foldRight[Formula](P(appliedTerm1))
-        ((el, fc) =>
-          val (v, typ) = el
-          typ match
-            case Self => forall(v, v :: adt.term ==> (P(v) ==> fc))
-            case GroundType(t) => forall(v, v :: t ==> fc)
-        )  
+        val s1 = have(vars1WellTyped + (structuralTerm1 === structuralTerm2) |- appliedTerm1 === structuralTerm2) by Cut(
+          tappTerm1Def,
+          ADTThm.altEqualityTransitivity of (x := appliedTerm1, y := structuralTerm1, z := structuralTerm2)
+        )
+        have(vars2WellTyped + (appliedTerm1 === structuralTerm2) |- appliedTerm1 === appliedTerm2) by Cut(
+          tappTerm2Def,
+          ADTThm.altEqualityTransitivity of (x := appliedTerm1, y := structuralTerm2, z := appliedTerm2)
+        )
+        have((vars1WellTyped ++ vars2WellTyped) + (structuralTerm1 === structuralTerm2) |- appliedTerm1 === appliedTerm2) by Cut(s1, lastStep)
+        val backward = thenHave(vars1WellTyped ++ vars2WellTyped |- (structuralTerm1 === structuralTerm2) ==> (appliedTerm1 === appliedTerm2)) by RightImplies
+
+        val definitionUnfolding = have(vars1WellTyped ++ vars2WellTyped |- (appliedTerm1 === appliedTerm2) <=> (structuralTerm1 === structuralTerm2)) by RightIff(forward, backward)
+        have((appliedTerm1 === appliedTerm2) <=> (structuralTerm1 === structuralTerm2) |- (appliedTerm1 === appliedTerm2) <=> /\(variables1.zip(variables2).map(_ === _))) by Sorry
+        Cut(
+          underlying.injectivity,
+          ADTThm.equivalenceRewriting of (p1 := (appliedTerm1 === appliedTerm2), p2 := (structuralTerm1 === structuralTerm2), p3 := /\(variables1.zip(variables2).map(_ === _)))
+        )
+        have(thesis) by Cut(definitionUnfolding, lastStep)
+      }
+
+  /**
+   * Case generated by this constructor when performing a proof by induction
+   */
+  lazy val inductiveCase: Formula =
+    syntacticSignature.foldRight[Formula](P(appliedTerm1))((el, fc) =>
+      val (v, typ) = el
+      typ match
+        case Self => forall(v, v :: adt.term ==> (P(v) ==> fc))
+        case GroundType(t) => forall(v, v :: t ==> fc)
+    )
 }
 
 /**
-  * Semantic set theoretical interpretation of an algebraic data type. That is the least set closed under [[SemanticConstructor]].
-  * 
-  * E.g. list is the smallest set containing nil and closed under the cons function.
-  *  
-  * Injectivity between different constructors, structural induction and elimination rule are proved within this class.
-  *
-  * @constructor generates a semantic interpretation for this ADT out of a syntactic one
-  * @param underlying the syntactic representation of this ADT
-  * @param constructors constructors of this ADT
-  */
-  private class SemanticADT[N <: Arity](
-    val underlying: SyntacticADT[N], 
+ * Semantic set theoretical interpretation of an algebraic data type. That is the least set closed under [[SemanticConstructor]].
+ *
+ * E.g. list is the smallest set containing nil and closed under the cons function.
+ *
+ * Injectivity between different constructors, structural induction and elimination rule are proved within this class.
+ *
+ * @constructor generates a semantic interpretation for this ADT out of a syntactic one
+ * @param underlying the syntactic representation of this ADT
+ * @param constructors constructors of this ADT
+ */
+private class SemanticADT[N <: Arity](
+    val underlying: SyntacticADT[N],
     val constructors: Seq[SemanticConstructor[N]]
-    ) {
+) {
 
-    /**
-     * Name of this ADT.
-     */
-    val name: String = underlying.name
+  /**
+   * Name of this ADT.
+   */
+  val name: String = underlying.name
 
-    /**
-      * Identifier of this ADT.
-      */
-    val id: Identifier = underlying.polymorphicTerm.id
+  /**
+   * Identifier of this ADT.
+   */
+  val id: Identifier = underlying.polymorphicTerm.id
 
-    /**
-     * Type variables of this ADT.
-     */
-    val typeVariables: Variable ** N = underlying.typeVariables
+  /**
+   * Type variables of this ADT.
+   */
+  val typeVariables: Variable ** N = underlying.typeVariables
 
-    /**
-      * Sequence of type variables of this ADT.
-      */
-    val typeVariablesSeq: Seq[Variable] = underlying.typeVariablesSeq
+  /**
+   * Sequence of type variables of this ADT.
+   */
+  val typeVariablesSeq: Seq[Variable] = underlying.typeVariablesSeq
 
-    /**
-      * Number of type variables in this ADT.
-      */
-    val typeArity: N = underlying.typeArity
+  /**
+   * Number of type variables in this ADT.
+   */
+  val typeArity: N = underlying.typeArity
 
-    /**
-     * Term representing this ADT where type variables are instantiated with given arguments.
-     * 
-     * @param args the instances of this ADT type variables
-     */
-    def term(args: Seq[Term]) = underlying.polymorphicTerm.applySeq(args)
+  /**
+   * Term representing this ADT where type variables are instantiated with given arguments.
+   *
+   * @param args the instances of this ADT type variables
+   */
+  def term(args: Seq[Term]) = underlying.polymorphicTerm.applySeq(args)
 
-    /**
-     * Term representing this ADT where type variables are instantiated with schematic variables.
-     */
-    val term: Term = underlying.term
+  /**
+   * Term representing this ADT where type variables are instantiated with schematic variables.
+   */
+  val term: Term = underlying.term
 
-    /**
-     * Theorem --- Injectivity of constructors.
-     *
-     *    Two instances of different construcors are always different.
-     *
-     * e.g. Nil != Cons(head, tail)
-     */
-    def injectivity(c1: SemanticConstructor[N], c2: SemanticConstructor[N]) =
+  /**
+   * Theorem --- Injectivity of constructors.
+   *
+   *    Two instances of different construcors are always different.
+   *
+   * e.g. Nil != Cons(head, tail)
+   */
+  def injectivity(c1: SemanticConstructor[N], c2: SemanticConstructor[N]) =
 
-      val vars1WellTyped: Set[Formula] = wellTypedSet(c1.semanticSignature1)
-      val vars2WellTyped: Set[Formula] = wellTypedSet(c2.semanticSignature2)
+    val vars1WellTyped: Set[Formula] = wellTypedSet(c1.semanticSignature1)
+    val vars2WellTyped: Set[Formula] = wellTypedSet(c2.semanticSignature2)
 
-      Lemma(vars1WellTyped ++ vars2WellTyped |- !(c1.appliedTerm1 === c2.appliedTerm2)) {
+    Lemma(vars1WellTyped ++ vars2WellTyped |- !(c1.appliedTerm1 === c2.appliedTerm2)) {
 
-        val defUnfolding = have((vars1WellTyped ++ vars2WellTyped) + (c1.appliedTerm1 === c2.appliedTerm2) |- c1.structuralTerm1 === c2.structuralTerm2) subproof {
-          have(forallSeq(c1.variables1, wellTypedFormula(c1.semanticSignature1) ==> (c1.appliedTerm1 === c1.structuralTerm1))) by Restate.from(c1.shortDefinition)
+      val defUnfolding = have((vars1WellTyped ++ vars2WellTyped) + (c1.appliedTerm1 === c2.appliedTerm2) |- c1.structuralTerm1 === c2.structuralTerm2) subproof {
+        have(forallSeq(c1.variables1, wellTypedFormula(c1.semanticSignature1) ==> (c1.appliedTerm1 === c1.structuralTerm1))) by Restate.from(c1.shortDefinition)
 
-          c1.variables1.foldLeft(lastStep)((fact, v) =>
-            fact.statement.right.head match
-              case Forall(_, phi) => thenHave(phi.substitute(v := x)) by InstantiateForall(x)
-              case _ => throw UnreachableException
-          )
-          val tappTerm1Def = thenHave(vars1WellTyped |- c1.structuralTerm1 === c1.appliedTerm1) by Restate
+        c1.variables1.foldLeft(lastStep)((fact, v) =>
+          fact.statement.right.head match
+            case Forall(_, phi) => thenHave(phi.substitute(v := x)) by InstantiateForall(x)
+            case _ => throw UnreachableException
+        )
+        val tappTerm1Def = thenHave(vars1WellTyped |- c1.structuralTerm1 === c1.appliedTerm1) by Restate
 
-          have(forallSeq(c2.variables2, wellTypedFormula(c2.semanticSignature2) ==> (c2.appliedTerm2 === c2.structuralTerm2))) by Restate.from(c2.shortDefinition)
+        have(forallSeq(c2.variables2, wellTypedFormula(c2.semanticSignature2) ==> (c2.appliedTerm2 === c2.structuralTerm2))) by Restate.from(c2.shortDefinition)
 
-          c2.variables2.foldLeft(lastStep)((fact, v) =>
-            fact.statement.right.head match
-              case Forall(_, phi) => thenHave(phi) by InstantiateForall(v)
-              case _ => throw UnreachableException
-          )
-          val tappTerm2Def = thenHave(vars2WellTyped |- c2.appliedTerm2 === c2.structuralTerm2) by Restate
+        c2.variables2.foldLeft(lastStep)((fact, v) =>
+          fact.statement.right.head match
+            case Forall(_, phi) => thenHave(phi) by InstantiateForall(v)
+            case _ => throw UnreachableException
+        )
+        val tappTerm2Def = thenHave(vars2WellTyped |- c2.appliedTerm2 === c2.structuralTerm2) by Restate
 
-          val s0 = have(vars2WellTyped + (c1.appliedTerm1 === c2.appliedTerm2) |- c1.appliedTerm1 === c2.structuralTerm2) by Cut(
-            tappTerm2Def,
-            ADTThm.altEqualityTransitivity of (x := c1.appliedTerm1, y := c2.appliedTerm2, z := c2.structuralTerm2)
-          )
-          have(vars1WellTyped + (c1.appliedTerm1 === c2.structuralTerm2) |- c1.structuralTerm1 === c2.structuralTerm2) by Cut(
-            tappTerm1Def,
-            ADTThm.altEqualityTransitivity of (x := c1.structuralTerm1, y := c1.appliedTerm1, z := c2.structuralTerm2)
-          )
-          have(thesis) by Cut(s0, lastStep)
-        }
-
-        have(!(c1.structuralTerm1 === c2.structuralTerm2)) by Restate.from(underlying.injectivity(c1.underlying, c2.underlying))
-        thenHave(c1.structuralTerm1 === c2.structuralTerm2 |- ()) by Restate
-
-        have((vars1WellTyped ++ vars2WellTyped) + (c1.appliedTerm1 === c2.appliedTerm2) |- ()) by Cut(defUnfolding, lastStep)
+        val s0 = have(vars2WellTyped + (c1.appliedTerm1 === c2.appliedTerm2) |- c1.appliedTerm1 === c2.structuralTerm2) by Cut(
+          tappTerm2Def,
+          ADTThm.altEqualityTransitivity of (x := c1.appliedTerm1, y := c2.appliedTerm2, z := c2.structuralTerm2)
+        )
+        have(vars1WellTyped + (c1.appliedTerm1 === c2.structuralTerm2) |- c1.structuralTerm1 === c2.structuralTerm2) by Cut(
+          tappTerm1Def,
+          ADTThm.altEqualityTransitivity of (x := c1.structuralTerm1, y := c1.appliedTerm1, z := c2.structuralTerm2)
+        )
+        have(thesis) by Cut(s0, lastStep)
       }
 
-    /**
-     * Theorem --- Structural induction principle for this ADT.
-     *
-     *    `base cases => inductive cases => ∀x ∈ ADT. P(x)`
-     */
-    lazy val induction = Lemma(constructors.foldRight[Formula](forall(x, x :: term ==> P(x)))((c, f) => c.inductiveCase ==> f)) { sp ?=>
-      constructors.foldRight[(Formula, Formula, sp.Fact)] {
-        val prop = forall(x, x :: term ==> P(x))
-        (prop, prop, have(prop <=> prop) by Restate)
-      }((c, acc) =>
-        val (oldBefore, oldAfter, fact) = acc
-        val newBefore = underlying.inductiveCase(c.underlying) ==> oldBefore
-        val newAfter = c.inductiveCase ==> oldAfter
+      have(!(c1.structuralTerm1 === c2.structuralTerm2)) by Restate.from(underlying.injectivity(c1.underlying, c2.underlying))
+      thenHave(c1.structuralTerm1 === c2.structuralTerm2 |- ()) by Restate
 
-        have(underlying.inductiveCase(c.underlying) <=> c.inductiveCase) subproof {
-          val wellTypedVars: Seq[Formula] = wellTyped(c.semanticSignature)
-          val wellTypedVarsSet = wellTypedVars.toSet
+      have((vars1WellTyped ++ vars2WellTyped) + (c1.appliedTerm1 === c2.appliedTerm2) |- ()) by Cut(defUnfolding, lastStep)
+    }
 
+  /**
+   * Theorem --- Structural induction principle for this ADT.
+   *
+   *    `base cases => inductive cases => ∀x ∈ ADT. P(x)`
+   */
+  lazy val induction = Lemma(constructors.foldRight[Formula](forall(x, x :: term ==> P(x)))((c, f) => c.inductiveCase ==> f)) { sp ?=>
+    constructors.foldRight[(Formula, Formula, sp.Fact)] {
+      val prop = forall(x, x :: term ==> P(x))
+      (prop, prop, have(prop <=> prop) by Restate)
+    }((c, acc) =>
+      val (oldBefore, oldAfter, fact) = acc
+      val newBefore = underlying.inductiveCase(c.underlying) ==> oldBefore
+      val newAfter = c.inductiveCase ==> oldAfter
 
-          have(forallSeq(c.variables, wellTypedFormula(c.semanticSignature) ==> (c.appliedTerm === c.structuralTerm))) by Restate.from(c.shortDefinition)
-          if c.arity > 0 then
-            c.variables1.foldLeft(lastStep)((l, _) =>
-              lastStep.statement.right.head match
-                case Forall(v, phi) => thenHave(phi) by InstantiateForall(v)
-                case _ => throw UnreachableException
-            )
+      have(underlying.inductiveCase(c.underlying) <=> c.inductiveCase) subproof {
+        val wellTypedVars: Seq[Formula] = wellTyped(c.semanticSignature)
+        val wellTypedVarsSet = wellTypedVars.toSet
 
-          val eq = thenHave(wellTypedVarsSet |- c.appliedTerm === c.structuralTerm) by Restate
-          have(P(c.appliedTerm) <=> P(c.appliedTerm)) by Restate
-          thenHave(c.structuralTerm === c.appliedTerm |- P(c.structuralTerm) <=> P(c.appliedTerm)) by RightSubstEq.withParametersSimple(
-            List((c.structuralTerm, c.appliedTerm)),
-            lambda(s, P(c.structuralTerm) <=> P(s))
+        have(forallSeq(c.variables, wellTypedFormula(c.semanticSignature) ==> (c.appliedTerm === c.structuralTerm))) by Restate.from(c.shortDefinition)
+        if c.arity > 0 then
+          c.variables1.foldLeft(lastStep)((l, _) =>
+            lastStep.statement.right.head match
+              case Forall(v, phi) => thenHave(phi) by InstantiateForall(v)
+              case _ => throw UnreachableException
           )
-          have(wellTypedVarsSet |- P(c.structuralTerm) <=> P(c.appliedTerm)) by Cut(eq, lastStep)
 
-          c.syntacticSignature
-            .foldRight[(Formula, Formula, Seq[Formula])]((P(c.structuralTerm), P(c.appliedTerm), wellTypedVars))((el, fc) =>
-              val (v, ty) = el
-              val (fc1, fc2, wellTypedVars) = fc
-              ty match
-                case Self =>
-                  val wellTypedV: Formula = v :: term
-                  have(wellTypedVars |- (P(v) ==> fc1) <=> (P(v) ==> fc2)) by Cut(lastStep, ADTThm.leftImpliesEquivalenceWeak of (p := P(v), p1 := fc1, p2 := fc2))
-                  thenHave(wellTypedVars.init |- wellTypedV ==> ((P(v) ==> fc1) <=> (P(v) ==> fc2))) by RightImplies
-                  have(wellTypedVars.init |- (wellTypedV ==> (P(v) ==> fc1)) <=> (wellTypedV ==> (P(v) ==> fc2))) by Cut(
-                    lastStep,
-                    ADTThm.leftImpliesEquivalenceStrong of (p := wellTypedV, p1 := P(v) ==> fc1, p2 := P(v) ==> fc2)
-                  )
-                  thenHave(wellTypedVars.init |- forall(v, (wellTypedV ==> (P(v) ==> fc1)) <=> (wellTypedV ==> (P(v) ==> fc2)))) by RightForall
-                  have(wellTypedVars.init |- forall(v, (wellTypedV ==> (P(v) ==> fc1))) <=> forall(v, (wellTypedV ==> (P(v) ==> fc2)))) by Cut(
-                    lastStep,
-                    universalEquivalenceDistribution of (P := lambda(v, wellTypedV ==> (P(v) ==> fc1)), Q := lambda(v, wellTypedV ==> (P(v) ==> fc2)))
-                  )
-                  (forall(v, wellTypedV ==> (P(v) ==> fc1)), forall(v, wellTypedV ==> (P(v) ==> fc2)), wellTypedVars.init)
-                case GroundType(t) =>
-                  thenHave(wellTypedVars.init |- v :: t ==> (fc1 <=> fc2)) by RightImplies
-                  have(wellTypedVars.init |- (in(v, t) ==> fc1) <=> (v :: t ==> fc2)) by Cut(lastStep, ADTThm.leftImpliesEquivalenceStrong of (p := in(v, t), p1 := fc1, p2 := fc2))
-                  thenHave(wellTypedVars.init |- forall(v, (in(v, t) ==> fc1) <=> (v :: t ==> fc2))) by RightForall
-                  have(wellTypedVars.init |- forall(v, (in(v, t) ==> fc1)) <=> forall(v, (v :: t ==> fc2))) by Cut(
-                    lastStep,
-                    universalEquivalenceDistribution of (P := lambda(v, in(v, t) ==> fc1), Q := lambda(v, v :: t ==> fc2))
-                  )
-                  (forall(v, (in(v, t) ==> fc1)), forall(v, (v :: t ==> fc2)), wellTypedVars.init)
-            )
-        }
-        (newBefore, newAfter, have(newBefore <=> newAfter) by Apply(ADTThm.impliesEquivalence).on(lastStep, fact))
-      )
-      have(underlying.induction.statement.right.head |- thesis.right.head) by Cut(
-        lastStep,
-        ADTThm.equivalenceApply of (
-          p1 := underlying.induction.statement.right.head, p2 := thesis.right.head
+        val eq = thenHave(wellTypedVarsSet |- c.appliedTerm === c.structuralTerm) by Restate
+        have(P(c.appliedTerm) <=> P(c.appliedTerm)) by Restate
+        thenHave(c.structuralTerm === c.appliedTerm |- P(c.structuralTerm) <=> P(c.appliedTerm)) by RightSubstEq.withParametersSimple(
+          List((c.structuralTerm, c.appliedTerm)),
+          lambda(s, P(c.structuralTerm) <=> P(s))
         )
-      )
-      have(thesis) by Cut(underlying.induction, lastStep)
-    }
+        have(wellTypedVarsSet |- P(c.structuralTerm) <=> P(c.appliedTerm)) by Cut(eq, lastStep)
 
-    /**
-      * Returns a map binding each constructor to formula describing whether x is an instance of it.
-      */
-    private lazy val isConstructorMap: Map[SemanticConstructor[N], Formula] =
-      constructors.map(c => c -> existsSeq(c.variables, wellTypedFormula(c.semanticSignature) /\ (x === c.appliedTerm))).toMap
-
-    /**
-      * Returns a formula describing whether x is an instance of one of this ADT's constructors.
-      */
-    private lazy val isConstructor =
-      \/(constructors.map(c => isConstructorMap(c)))
-
-    /**
-     * Theorem --- Pattern matching principle (also known as elimination rule) for this ADT.
-     *
-     *    `x ∈ ADT |- x = c * x1 * ... * xn for some constructor c and xi, ..., xj ∈ ADT`
-     */
-    lazy val elim = Lemma(x :: term |- simplify(isConstructor)) {
-
-      // Induction preconditions with P(z) = z != x
-      val inductionPreconditionIneq = constructors.map(c => c -> c.inductiveCase.substitute((P -> lambda(z, !(x === z))))).toMap
-      val inductionPreconditionsIneq = /\(inductionPreconditionIneq.map(_._2))
-
-      // Weakening of the negation of the induction preconditions
-      val weakNegInductionPreconditionIneq: Map[SemanticConstructor[N], Formula] = constructors
-        .map(c =>
-          c ->
-            c.semanticSignature
-              .foldRight[Formula](x === c.appliedTerm)((el, fc) =>
-                val (v, t) = el
-                exists(v, (v :: t) /\ fc)
-              )
-        )
-        .toMap
-
-      // STEP 1: Prove that if the induction preconditions with P(z) = z != x do not hold then x is the instance of some constructor
-      val strengtheningOfInductionPreconditions = have(!inductionPreconditionsIneq |- isConstructor) subproof {
-        if constructors.isEmpty then have(thesis) by Restate
-        else
-
-          // STEP 1.1: Prove the claim for each constructor
-          val negInductionPreconditionsOrSequence =
-            for c <- constructors yield
-
-              // STEP 1.1.1: Prove the strengthening of the negations of the induction preconditions
-              val conditionStrenghtening = have(!inductionPreconditionIneq(c) |- weakNegInductionPreconditionIneq(c)) subproof {
-                have(x === c.appliedTerm |- x === c.appliedTerm) by Hypothesis
-
-                c.syntacticSignature
-                  .foldRight(lastStep)((el, fact) =>
-                    val (v, ty) = el
-                    val left = fact.statement.left.head
-                    val right = fact.statement.right.head
-
-                    ty match
-                      case Self =>
-                        thenHave(!(x === v) /\ left |- right) by Weakening
-                      case _ => ()
-
-                    val weakr = thenHave(in(v, ty.getOrElse(term)) /\ left |- right) by Weakening
-                    val weakl = have(in(v, ty.getOrElse(term)) /\ left |- in(v, ty.getOrElse(term))) by Restate
-
-                    have((v :: ty.getOrElse(term)) /\ left |- (v :: ty.getOrElse(term)) /\ right) by RightAnd(weakl, weakr)
-                    thenHave((v :: ty.getOrElse(term)) /\ left |- exists(v, (v :: ty.getOrElse(term)) /\ right)) by RightExists
-                    thenHave(exists(v, (v :: ty.getOrElse(term)) /\ left) |- exists(v, (v :: ty.getOrElse(term)) /\ right)) by LeftExists
-                  )
-
-              }
-
-              // STEP 1.1.2: Conclude
-              // TODO: Change to a more efficient way of proving this
-              have(weakNegInductionPreconditionIneq(c) |- isConstructorMap(c)) by Tableau
-              have(!inductionPreconditionIneq(c) |- isConstructorMap(c)) by Cut(conditionStrenghtening, lastStep)
-              thenHave(!inductionPreconditionIneq(c) |- isConstructor) by Weakening
-
-          have(thesis) by LeftOr(negInductionPreconditionsOrSequence: _*)
+        c.syntacticSignature
+          .foldRight[(Formula, Formula, Seq[Formula])]((P(c.structuralTerm), P(c.appliedTerm), wellTypedVars))((el, fc) =>
+            val (v, ty) = el
+            val (fc1, fc2, wellTypedVars) = fc
+            ty match
+              case Self =>
+                val wellTypedV: Formula = v :: term
+                have(wellTypedVars |- (P(v) ==> fc1) <=> (P(v) ==> fc2)) by Cut(lastStep, ADTThm.leftImpliesEquivalenceWeak of (p := P(v), p1 := fc1, p2 := fc2))
+                thenHave(wellTypedVars.init |- wellTypedV ==> ((P(v) ==> fc1) <=> (P(v) ==> fc2))) by RightImplies
+                have(wellTypedVars.init |- (wellTypedV ==> (P(v) ==> fc1)) <=> (wellTypedV ==> (P(v) ==> fc2))) by Cut(
+                  lastStep,
+                  ADTThm.leftImpliesEquivalenceStrong of (p := wellTypedV, p1 := P(v) ==> fc1, p2 := P(v) ==> fc2)
+                )
+                thenHave(wellTypedVars.init |- forall(v, (wellTypedV ==> (P(v) ==> fc1)) <=> (wellTypedV ==> (P(v) ==> fc2)))) by RightForall
+                have(wellTypedVars.init |- forall(v, (wellTypedV ==> (P(v) ==> fc1))) <=> forall(v, (wellTypedV ==> (P(v) ==> fc2)))) by Cut(
+                  lastStep,
+                  universalEquivalenceDistribution of (P := lambda(v, wellTypedV ==> (P(v) ==> fc1)), Q := lambda(v, wellTypedV ==> (P(v) ==> fc2)))
+                )
+                (forall(v, wellTypedV ==> (P(v) ==> fc1)), forall(v, wellTypedV ==> (P(v) ==> fc2)), wellTypedVars.init)
+              case GroundType(t) =>
+                thenHave(wellTypedVars.init |- v :: t ==> (fc1 <=> fc2)) by RightImplies
+                have(wellTypedVars.init |- (in(v, t) ==> fc1) <=> (v :: t ==> fc2)) by Cut(lastStep, ADTThm.leftImpliesEquivalenceStrong of (p := in(v, t), p1 := fc1, p2 := fc2))
+                thenHave(wellTypedVars.init |- forall(v, (in(v, t) ==> fc1) <=> (v :: t ==> fc2))) by RightForall
+                have(wellTypedVars.init |- forall(v, (in(v, t) ==> fc1)) <=> forall(v, (v :: t ==> fc2))) by Cut(
+                  lastStep,
+                  universalEquivalenceDistribution of (P := lambda(v, in(v, t) ==> fc1), Q := lambda(v, v :: t ==> fc2))
+                )
+                (forall(v, (in(v, t) ==> fc1)), forall(v, (v :: t ==> fc2)), wellTypedVars.init)
+          )
       }
-
-      // STEP 2: Conclude
-      have(inductionPreconditionsIneq |- forall(z, z :: term ==> !(x === z))) by Restate.from(induction of (P := lambda(z, !(x === z))))
-      thenHave(inductionPreconditionsIneq |- x :: term ==> !(x === x)) by InstantiateForall(x)
-      val ind = thenHave(x :: term |- !inductionPreconditionsIneq) by Restate
-      have(x :: term |- isConstructor) by Cut(lastStep, strengtheningOfInductionPreconditions)
-    }
+      (newBefore, newAfter, have(newBefore <=> newAfter) by Apply(ADTThm.impliesEquivalence).on(lastStep, fact))
+    )
+    have(underlying.induction.statement.right.head |- thesis.right.head) by Cut(
+      lastStep,
+      ADTThm.equivalenceApply of (
+        p1 := underlying.induction.statement.right.head, p2 := thesis.right.head
+      )
+    )
+    have(thesis) by Cut(underlying.induction, lastStep)
   }
 
+  /**
+   * Returns a map binding each constructor to formula describing whether x is an instance of it.
+   */
+  private lazy val isConstructorMap: Map[SemanticConstructor[N], Formula] =
+    constructors.map(c => c -> existsSeq(c.variables, wellTypedFormula(c.semanticSignature) /\ (x === c.appliedTerm))).toMap
 
+  /**
+   * Returns a formula describing whether x is an instance of one of this ADT's constructors.
+   */
+  private lazy val isConstructor =
+    \/(constructors.map(c => isConstructorMap(c)))
 
+  /**
+   * Theorem --- Pattern matching principle (also known as elimination rule) for this ADT.
+   *
+   *    `x ∈ ADT |- x = c * x1 * ... * xn for some constructor c and xi, ..., xj ∈ ADT`
+   */
+  lazy val elim = Lemma(x :: term |- simplify(isConstructor)) {
 
+    // Induction preconditions with P(z) = z != x
+    val inductionPreconditionIneq = constructors.map(c => c -> c.inductiveCase.substitute((P -> lambda(z, !(x === z))))).toMap
+    val inductionPreconditionsIneq = /\(inductionPreconditionIneq.map(_._2))
 
+    // Weakening of the negation of the induction preconditions
+    val weakNegInductionPreconditionIneq: Map[SemanticConstructor[N], Formula] = constructors
+      .map(c =>
+        c ->
+          c.semanticSignature
+            .foldRight[Formula](x === c.appliedTerm)((el, fc) =>
+              val (v, t) = el
+              exists(v, (v :: t) /\ fc)
+            )
+      )
+      .toMap
 
+    // STEP 1: Prove that if the induction preconditions with P(z) = z != x do not hold then x is the instance of some constructor
+    val strengtheningOfInductionPreconditions = have(!inductionPreconditionsIneq |- isConstructor) subproof {
+      if constructors.isEmpty then have(thesis) by Restate
+      else
+
+        // STEP 1.1: Prove the claim for each constructor
+        val negInductionPreconditionsOrSequence =
+          for c <- constructors yield
+
+            // STEP 1.1.1: Prove the strengthening of the negations of the induction preconditions
+            val conditionStrenghtening = have(!inductionPreconditionIneq(c) |- weakNegInductionPreconditionIneq(c)) subproof {
+              have(x === c.appliedTerm |- x === c.appliedTerm) by Hypothesis
+
+              c.syntacticSignature
+                .foldRight(lastStep)((el, fact) =>
+                  val (v, ty) = el
+                  val left = fact.statement.left.head
+                  val right = fact.statement.right.head
+
+                  ty match
+                    case Self =>
+                      thenHave(!(x === v) /\ left |- right) by Weakening
+                    case _ => ()
+
+                  val weakr = thenHave(in(v, ty.getOrElse(term)) /\ left |- right) by Weakening
+                  val weakl = have(in(v, ty.getOrElse(term)) /\ left |- in(v, ty.getOrElse(term))) by Restate
+
+                  have((v :: ty.getOrElse(term)) /\ left |- (v :: ty.getOrElse(term)) /\ right) by RightAnd(weakl, weakr)
+                  thenHave((v :: ty.getOrElse(term)) /\ left |- exists(v, (v :: ty.getOrElse(term)) /\ right)) by RightExists
+                  thenHave(exists(v, (v :: ty.getOrElse(term)) /\ left) |- exists(v, (v :: ty.getOrElse(term)) /\ right)) by LeftExists
+                )
+
+            }
+
+            // STEP 1.1.2: Conclude
+            // TODO: Change to a more efficient way of proving this
+            have(weakNegInductionPreconditionIneq(c) |- isConstructorMap(c)) by Tableau
+            have(!inductionPreconditionIneq(c) |- isConstructorMap(c)) by Cut(conditionStrenghtening, lastStep)
+            thenHave(!inductionPreconditionIneq(c) |- isConstructor) by Weakening
+
+        have(thesis) by LeftOr(negInductionPreconditionsOrSequence: _*)
+    }
+
+    // STEP 2: Conclude
+    have(inductionPreconditionsIneq |- forall(z, z :: term ==> !(x === z))) by Restate.from(induction of (P := lambda(z, !(x === z))))
+    thenHave(inductionPreconditionsIneq |- x :: term ==> !(x === x)) by InstantiateForall(x)
+    val ind = thenHave(x :: term |- !inductionPreconditionsIneq) by Restate
+    have(x :: term |- isConstructor) by Cut(lastStep, strengtheningOfInductionPreconditions)
+  }
+}

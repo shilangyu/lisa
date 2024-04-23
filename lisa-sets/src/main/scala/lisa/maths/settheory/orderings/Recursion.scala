@@ -8,6 +8,7 @@ import lisa.maths.settheory.orderings.Induction.*
 import lisa.maths.settheory.orderings.PartialOrders.*
 import lisa.maths.settheory.orderings.Segments.*
 import lisa.maths.settheory.orderings.WellOrders.*
+import lisa.maths.settheory.functions.*
 
 import Ordinals.*
 

@@ -1,10 +1,5 @@
 package lisa.maths.settheory.functions
 
-import lisa.automation.kernel.CommonTactics.Definition
-import lisa.automation.settheory.SetTheoryTactics.*
-import lisa.maths.Quantifiers.*
-import lisa.maths.settheory.SetTheory.*
-
 import scala.collection.immutable.{Map => ScalaMap}
 
 /**
@@ -13,6 +8,9 @@ import scala.collection.immutable.{Map => ScalaMap}
  * Develops the set-theoretic functions, their properties, and common theorems.
  */
 object Functionals {
+  import lisa.automation.kernel.CommonTactics.Definition
+  import lisa.automation.settheory.SetTheoryTactics.*
+  // import lisa.maths.Quantifiers.
   import lisa.maths.settheory.SetTheory.{*, given}
 
   // var defs
@@ -51,7 +49,7 @@ object Functionals {
    * Alias for [[relationDomain]].
    */
   val functionDomain = relationDomain
-  
+
   /**
    * Alias for [[relationRange]].
    */
@@ -388,6 +386,49 @@ object Functionals {
    */
   val app =
     DEF(f, x) --> The(z, ((functional(f) /\ in(x, functionDomain(f))) ==> in(pair(x, z), f)) /\ ((!functional(f) \/ !in(x, functionDomain(f))) ==> (z === ∅)))(functionApplicationUniqueness)
+
+  /**
+   * Theorem --- The application of a function is in its codomain.
+   *
+   *    `f ∈ x → y /\ a ∈ x |- f(a) ∈ y`
+   */
+  // val functionFromApplication = Theorem(
+  //   functionFrom(f, x, y) /\ in(a, x) |- in(app(f, a), y)
+  // ) {
+  //   val funcFrom = assume(functionFrom(f, x, y))
+  //   val inDomain = assume(in(a, x))
+//
+  //   val isFunctional = have(functional(f)) by Tautology.from(funcFrom, functionFromImpliesFunctional)
+  //   val relDomainEq = have(relationDomain(f) === x) by Tautology.from(funcFrom, functionFromImpliesDomainEq)
+  //   val inRelDomain = have(in(a, relationDomain(f))) by Substitution.ApplyRules(relDomainEq)(inDomain)
+//
+  //   val appDef = have(
+  //     ((functional(f) /\ in(a, relationDomain(f))) ==> in(pair(a, app(f, a)), f))
+  //       /\ ((!functional(f) \/ !in(a, relationDomain(f))) ==> (app(f, a) === ∅))
+  //   ) by InstantiateForall(app(f, a))(
+  //     app.definition of (x := a)
+  //   )
+//
+  //   have(in(pair(a, app(f, a)), f)) by Tautology.from(
+  //     isFunctional,
+  //     inRelDomain,
+  //     appDef
+  //   )
+  //   val pairInF = thenHave(∃(z, in(pair(z, app(f, a)), f))) by RightExists
+//
+  //   have(∀(t, in(t, relationRange(f)) <=> ∃(z, in(pair(z, t), f)))) by InstantiateForall(relationRange(f))(
+  //     relationRange.definition of (r := f)
+  //   )
+  //   val rangeDef = thenHave(in(app(f, a), relationRange(f)) <=> ∃(z, in(pair(z, app(f, a)), f))) by InstantiateForall(app(f, a))
+//
+  //   val appInRange = have(in(app(f, a), relationRange(f))) by Tautology.from(rangeDef, pairInF)
+//
+  //   have(subset(relationRange(f), y)) by Weakening(functionImpliesRangeSubsetOfCodomain)
+  //   thenHave(∀(z, in(z, relationRange(f)) ==> in(z, y))) by Substitution.ApplyRules(subsetAxiom of (x := relationRange(f)))
+  //   thenHave(in(app(f, a), relationRange(f)) ==> in(app(f, a), y)) by InstantiateForall(app(f, a))
+//
+  //   have(thesis) by Tautology.from(appInRange, lastStep)
+  // }
 
   val pairInFunctionIsApp = Theorem(
     functional(f) /\ in(a, functionDomain(f)) |- in(pair(a, b), f) <=> (app(f, a) === b)
@@ -847,7 +888,7 @@ object Functionals {
             lastStep,
             existentialEquivalenceDistribution of (P -> lambda(y, in(pair(x, y), h)), Q -> lambda(y, in(pair(x, y), f) \/ in(pair(x, y), g)))
           )
-          // have(exists(y, in(pair(x, y), h)) <=> (exists(y, in(pair(x, y), f)) \/ exists(y, in(pair(x, y), g)))) by Tautology.from(lastStep, existentialDisjunctionCommutation of (P -> lambda(y, in(pair(x, y), f)), Q -> lambda(y, in(pair(x, y), g)))) // TODO: Possible Tautology Bug
+          // have(exists(y, in(pair(x, y), h)) <=> (exists(y, in(pair(x, y), f)) \/ exists(y, in(pair(x, y), g)))) by Tautology.from(lastStep, existentialDisjunctionCommutation of (P -> lambda(y, in(pair(x, y), f)), Q -> lambda(y, in(pair(x, y), g)))) // FIXME: Possible Tautology Bug
           thenHave(exists(y, in(pair(x, y), h)) <=> (exists(y, in(pair(x, y), f)) \/ exists(y, in(pair(x, y), g)))) by Substitution.ApplyRules(
             existentialDisjunctionCommutation of (P -> lambda(y, in(pair(x, y), f)), Q -> lambda(y, in(pair(x, y), g))) // BUG: ?
           )

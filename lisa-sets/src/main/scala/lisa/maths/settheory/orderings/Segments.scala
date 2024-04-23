@@ -6,6 +6,7 @@ import lisa.maths.settheory.SetTheory.*
 import lisa.maths.settheory.orderings.InclusionOrders.*
 import lisa.maths.settheory.orderings.PartialOrders.*
 import lisa.maths.settheory.orderings.WellOrders.*
+import lisa.maths.settheory.functions.*
 
 import Ordinals.*
 

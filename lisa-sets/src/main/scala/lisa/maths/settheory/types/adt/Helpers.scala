@@ -1,18 +1,18 @@
 package lisa.maths.settheory.types.adt
 
 /**
-  * Tactic that proves every goal of the form:
-  *
-  * ` ... |- ..., ∀x1, ..., xn. P(x), ...`
-  * 
-  * ` ..., ∀x1, ..., xn . P(x), ... |- ...`
-  * 
-  * ` ... |- ..., ∃x1, ..., xn. P(x), ...`
-  * 
-  * ` ..., ∃x1, ..., xn . P(x), ... |- ...`
-  * 
-  * given a proof of the sequents without quantification.
-  */
+ * Tactic that proves every goal of the form:
+ *
+ * ` ... |- ..., ∀x1, ..., xn. P(x), ...`
+ *
+ * ` ..., ∀x1, ..., xn . P(x), ... |- ...`
+ *
+ * ` ... |- ..., ∃x1, ..., xn. P(x), ...`
+ *
+ * ` ..., ∃x1, ..., xn . P(x), ... |- ...`
+ *
+ * given a proof of the sequents without quantification.
+ */
 object QuantifiersIntro extends lisa.prooflib.ProofTacticLib.ProofTactic {
 
   import lisa.prooflib.SimpleDeducedSteps.Restate
@@ -20,18 +20,17 @@ object QuantifiersIntro extends lisa.prooflib.ProofTacticLib.ProofTactic {
   import lisa.fol.FOL.*
 
   /**
-    * Executes the tactic on a specific goal.
-    *
-    * @param lib the library that is currently being used
-    * @param proof the ongoing proof in which the tactic is called
-    * @param vars the variables that needs to be quantified
-    * @param fact the proof of the sequent without quantification
-    * @param bot the statement to prove
-    */
+   * Executes the tactic on a specific goal.
+   *
+   * @param lib the library that is currently being used
+   * @param proof the ongoing proof in which the tactic is called
+   * @param vars the variables that needs to be quantified
+   * @param fact the proof of the sequent without quantification
+   * @param bot the statement to prove
+   */
   def apply(using lib: lisa.prooflib.Library, proof: lib.Proof)(vars: Seq[Variable])(fact: proof.Fact)(bot: Sequent): proof.ProofTacticJudgement =
     TacticSubproof { sp ?=>
-      if vars.isEmpty then
-        lib.have(bot) by Restate.from(fact)
+      if vars.isEmpty then lib.have(bot) by Restate.from(fact)
       else
         val diff: Sequent = bot -- fact.statement
 
@@ -41,14 +40,14 @@ object QuantifiersIntro extends lisa.prooflib.ProofTacticLib.ProofTactic {
             val f = s.head
             val fWithoutQuant = (fact.statement.left -- diffRest).head
             f match
-              case BinderFormula(Forall, _, _) => 
-                vars.foldRight[(sp.Fact, Formula)](fact, fWithoutQuant)( (v, acc) => 
+              case BinderFormula(Forall, _, _) =>
+                vars.foldRight[(sp.Fact, Formula)](fact, fWithoutQuant)((v, acc) =>
                   val (accFact, accFormula) = acc
                   val newFormula = forall(v, accFormula)
                   (lib.have(diffRest + newFormula |- bot.right) by LeftForall(accFact), newFormula)
                 )
-              case BinderFormula(Exists, _, _) => 
-                vars.foldRight[(sp.Fact, Formula)](fact, fWithoutQuant)( (v, acc) => 
+              case BinderFormula(Exists, _, _) =>
+                vars.foldRight[(sp.Fact, Formula)](fact, fWithoutQuant)((v, acc) =>
                   val (accFact, accFormula) = acc
                   val newFormula = exists(v, accFormula)
                   (lib.have(diffRest + newFormula |- bot.right) by LeftExists(accFact), newFormula)
@@ -59,14 +58,14 @@ object QuantifiersIntro extends lisa.prooflib.ProofTacticLib.ProofTactic {
             val f = s.head
             val fWithoutQuant = (fact.statement.right -- diffRest).head
             f match
-              case BinderFormula(Forall, _, _) => 
-                vars.foldRight[(sp.Fact, Formula)](fact, fWithoutQuant)( (v, acc) => 
+              case BinderFormula(Forall, _, _) =>
+                vars.foldRight[(sp.Fact, Formula)](fact, fWithoutQuant)((v, acc) =>
                   val (accFact, accFormula) = acc
                   val newFormula = forall(v, accFormula)
                   (lib.have(bot.left |- diffRest + newFormula) by RightForall(accFact), newFormula)
                 )
-              case BinderFormula(Exists, _, _) => 
-                vars.foldRight[(sp.Fact, Formula)](fact, fWithoutQuant)( (v, acc) => 
+              case BinderFormula(Exists, _, _) =>
+                vars.foldRight[(sp.Fact, Formula)](fact, fWithoutQuant)((v, acc) =>
                   val (accFact, accFormula) = acc
                   val newFormula = exists(v, accFormula)
                   (lib.have(bot.left |- diffRest + newFormula) by RightExists(accFact), newFormula)
@@ -75,24 +74,23 @@ object QuantifiersIntro extends lisa.prooflib.ProofTacticLib.ProofTactic {
           case Sequent(s1, s2) if s1.isEmpty && s2.isEmpty => lib.have(bot) by Restate.from(fact)
           case _ => return proof.InvalidProofTactic("Two or more formulas in the sequent have changed.")
 
-          
-    }  
+    }
 }
 
 /**
  * General purpose helpers.
  */
-private [adt] object Helpers {
+private[adt] object Helpers {
 
   import lisa.fol.FOL.{*, given}
 
   /**
-    * Benchmarks a block of code.
-    *
-    * @param name the name of the benchmark
-    * @param f the block of code to benchmark
-    * @return the result of the block of code and prints how long it took to execute
-    */
+   * Benchmarks a block of code.
+   *
+   * @param name the name of the benchmark
+   * @param f the block of code to benchmark
+   * @return the result of the block of code and prints how long it took to execute
+   */
   def benchmark[T](name: String)(f: => T): T = {
     val before = System.nanoTime
 
@@ -106,8 +104,8 @@ private [adt] object Helpers {
   }
 
   /**
-    * Exception thrown when code that should not be accessed is reached.
-    */
+   * Exception thrown when code that should not be accessed is reached.
+   */
   object UnreachableException extends Exception("This code should not be accessed. If you see this message, please report it to the library maintainers.")
 
   // *********************
@@ -210,35 +208,29 @@ private [adt] object Helpers {
       case Implies(phi, psi) => Implies(simplify(phi), simplify(psi))
       case _ => f
 
-
   /**
    * Picks fresh variables starting with a given prefix .
-   * 
+   *
    * @param prefix the prefix of the fresh variables
    * @param size the number of fresh variables to output
    * @param assigned the variables that are already used
    * @param counter the index to append to the prefix
    * @param acc the variables that have already been generated by this method
-   * 
    */
   def chooseVars(prefix: String, size: Int, assigned: Set[Variable] = Set.empty, counter: Int = 0, acc: Seq[Variable] = Seq.empty): Seq[Variable] =
-    if size == 0 then 
-      acc
+    if size == 0 then acc
     else
       val newVar = Variable(s"${prefix}${counter}")
-      if assigned.contains(newVar) then
-        chooseVars(prefix, size, assigned, counter + 1, acc)
-      else 
-        chooseVars(prefix, size - 1, assigned, counter + 1, acc :+ newVar)
-
+      if assigned.contains(newVar) then chooseVars(prefix, size, assigned, counter + 1, acc)
+      else chooseVars(prefix, size - 1, assigned, counter + 1, acc :+ newVar)
 
 }
 
 /**
-  * Definitions and helper functions for ADT.
-  */
+ * Definitions and helper functions for ADT.
+ */
 private[adt] object ADTDefinitions {
-
+  import lisa.maths.settheory.functions.*
   import lisa.maths.settheory.SetTheory.*
   import lisa.maths.settheory.types.TypeSystem.*
   import Helpers.{/\}
@@ -247,6 +239,7 @@ private[adt] object ADTDefinitions {
    * The specification of a constructor can either contain terms or a self reference, i.e. a reference to the ADT itself.
    */
   trait ConstructorArgument {
+
     /**
      * Returns the term associated to a constructor argument, or in case it is a self reference, returns the term associated to the ADT.
      *
@@ -258,26 +251,26 @@ private[adt] object ADTDefinitions {
         case Self => adt
         case GroundType(term) => term
       }
-    
+
     /**
-      * Substitutes the type variables of a constructor argument.
-      */
-    def substitute(p: SubstPair*): ConstructorArgument = 
+     * Substitutes the type variables of a constructor argument.
+     */
+    def substitute(p: SubstPair*): ConstructorArgument =
       this match
         case Self => Self
-        case GroundType(t) => GroundType(t.substitute(p : _*))
+        case GroundType(t) => GroundType(t.substitute(p: _*))
   }
-  
+
   /**
    * A symbol for self reference
    */
   case object Self extends ConstructorArgument
 
   /**
-    * Syntactic represenation of a term
-    *
-    * @param t the underlying term
-    */
+   * Syntactic represenation of a term
+   *
+   * @param t the underlying term
+   */
   case class GroundType(t: Term) extends ConstructorArgument
 
   /**
@@ -314,69 +307,67 @@ private[adt] object ADTDefinitions {
     else successor(toTerm(n - 1))
 
   /**
-    * Returns a sequence of formulas asserting that all terms of a sequence are well-typed. 
-    *
-    * @param s the terms and their respective types
-    */
+   * Returns a sequence of formulas asserting that all terms of a sequence are well-typed.
+   *
+   * @param s the terms and their respective types
+   */
   def wellTyped(s: Seq[(Term, Term)]): Seq[Formula] = s.map(_ :: _)
 
-    /**
-    * Returns a sequence of formulas asserting that all terms of a sequence are well-typed with respect to the
-    * specification of a constructor. 
-    *
-    * @param s the terms and their respective type
-    * @param orElse the term to use in case of a self reference
-    */
+  /**
+   * Returns a sequence of formulas asserting that all terms of a sequence are well-typed with respect to the
+   * specification of a constructor.
+   *
+   * @param s the terms and their respective type
+   * @param orElse the term to use in case of a self reference
+   */
   def wellTyped(s: Seq[(Term, ConstructorArgument)])(orElse: Term): Seq[Formula] = s.map((t, arg) => t :: arg.getOrElse(orElse))
 
   /**
-   * Returns a set of formulas asserting that all terms of a sequence are well-typed. 
-   * 
+   * Returns a set of formulas asserting that all terms of a sequence are well-typed.
+   *
    * @param s the terms and their respective types
    */
   def wellTypedSet(s: Seq[(Term, Term)]): Set[Formula] = wellTyped(s).toSet
 
-    /**
-    * Returns a set of formulas asserting that all terms of a sequence are well-typed with respect to the
-    * specification of a constructor. 
-    *
-    * @param s the terms and their respective type
-    * @param orElse the term to use in case of a self reference
-    */
+  /**
+   * Returns a set of formulas asserting that all terms of a sequence are well-typed with respect to the
+   * specification of a constructor.
+   *
+   * @param s the terms and their respective type
+   * @param orElse the term to use in case of a self reference
+   */
   def wellTypedSet(s: Seq[(Term, ConstructorArgument)])(orElse: Term): Set[Formula] = wellTyped(s)(orElse).toSet
 
   /**
-   * Returns a formula asserting that all terms of a sequence are well-typed. 
-   * 
+   * Returns a formula asserting that all terms of a sequence are well-typed.
+   *
    * @param s the terms and their respective types
    */
-  def wellTypedFormula(s: Seq[(Term, Term)]): Formula = /\ (wellTyped(s))
+  def wellTypedFormula(s: Seq[(Term, Term)]): Formula = /\(wellTyped(s))
 
   /**
-    * Returns a formula asserting that all terms of a sequence are well-typed with respect to the
-    * specification of a constructor. 
-    *
-    * @param s the terms and their respective type
-    * @param orElse the term to use in case of a self reference
-    */
-  def wellTypedFormula(s: Seq[(Term, ConstructorArgument)])(orElse: Term): Formula = /\ (wellTyped(s)(orElse))
+   * Returns a formula asserting that all terms of a sequence are well-typed with respect to the
+   * specification of a constructor.
+   *
+   * @param s the terms and their respective type
+   * @param orElse the term to use in case of a self reference
+   */
+  def wellTypedFormula(s: Seq[(Term, ConstructorArgument)])(orElse: Term): Formula = /\(wellTyped(s)(orElse))
 
 }
-
 
 /**
  * List of external set theoretic theorems needed for proofs about ADT.
  * Some of these theorems are not yet implemented in the library and
  * will be added in the future.
  */
-private [adt] object ADTHelperTheorems {
-
+private[adt] object ADTHelperTheorems {
+  import lisa.maths.settheory.functions.*
   import lisa.maths.settheory.SetTheory.{*, given}
-  import lisa.maths.Quantifiers.{existentialEquivalenceDistribution, equalityInExistentialQuantifier,
-    existentialConjunctionWithClosedFormula, equalityTransitivity}
+  import lisa.maths.Quantifiers.{existentialEquivalenceDistribution, equalityInExistentialQuantifier, existentialConjunctionWithClosedFormula, equalityTransitivity}
   import ADTDefinitions.*
   import Helpers.*
-  //import lisa.maths.Quantifiers.*
+  // import lisa.maths.Quantifiers.*
 
   // TODO: Remove
   val pair = ConstantFunctionLabel("pair", 2)
@@ -390,10 +381,9 @@ private [adt] object ADTHelperTheorems {
   // * FIRST ORDER LOGIC *
   // *********************
 
-
   /**
-    * Lemma --- Alternative statement of transitivity of equality.
-    */
+   * Lemma --- Alternative statement of transitivity of equality.
+   */
   val altEqualityTransitivity = Lemma((x === y, y === z) |- x === z) {
     have(thesis) by Restate.from(equalityTransitivity)
   }
@@ -764,9 +754,8 @@ private [adt] object ADTHelperTheorems {
 
   /**
    * Theorem --- The range of the empty relation is empty.
-   * 
+   *
    *     `range(∅) = ∅`
-   * 
    */
   val rangeEmpty = Theorem(relationRange(emptySet) === emptySet) {
     import lisa.maths.settheory.SetTheory
@@ -784,7 +773,6 @@ private [adt] object ADTHelperTheorems {
     )
     have(relationRange(emptySet) === emptySet) by Tautology.from(defRHS, lastStep)
   }
-
 
   /**
    * Lemma --- The range of the empty function is empty.

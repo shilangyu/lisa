@@ -3,6 +3,7 @@ package lisa.maths.settheory.orderings
 import lisa.automation.settheory.SetTheoryTactics.*
 import lisa.maths.Quantifiers.*
 import lisa.maths.settheory.SetTheory.*
+import lisa.maths.settheory.functions.*
 
 object PartialOrders extends lisa.Main {
 
@@ -327,21 +328,21 @@ object PartialOrders extends lisa.Main {
 
   private val pA = variable // order
   private val pB = variable // order
-  val orderIsomorphism = DEF(pA, pB, f) --> {
-    val A = firstInPair(pA)
-    val B = firstInPair(pB)
-    val `<A` = secondInPair(pA)
-    val `<B` = secondInPair(pB)
-    partialOrder(pA) /\ partialOrder(pB) /\ bijective(f, A, B) /\
-      ∀(
-        x,
-        in(x, A) ==> ∀(
-          y,
-          in(y, A) ==>
-            (in(pair(x, y), `<A`) <=> in(pair(app(f, x), app(f, y)), `<B`)) // f(x) <B f(y)
-        )
-      )
-  }
+  // val orderIsomorphism = DEF(pA, pB, f) --> {
+  //   val A = firstInPair(pA)
+  //   val B = firstInPair(pB)
+  //   val `<A` = secondInPair(pA)
+  //   val `<B` = secondInPair(pB)
+  //   partialOrder(pA) /\ partialOrder(pB) /\ bijective(f, A, B) /\
+  //     ∀(
+  //       x,
+  //       in(x, A) ==> ∀(
+  //         y,
+  //         in(y, A) ==>
+  //           (in(pair(x, y), `<A`) <=> in(pair(app(f, x), app(f, y)), `<B`)) // f(x) <B f(y)
+  //       )
+  //     )
+  // }
 
   val partialOrderSubset = Lemma(
     partialOrder(p) /\ subset(c, firstInPair(p)) /\ subset(d, secondInPair(p)) |- partialOrder(pair(c, d))
