@@ -1,4 +1,5 @@
 package lisa.maths.settheory.functions
+import lisa.automation.Tableau.Substitution
 import lisa.automation.kernel.CommonTactics.Definition
 import lisa.automation.settheory.SetTheoryTactics._
 import lisa.maths.Quantifiers._
@@ -526,7 +527,6 @@ object Functionals extends lisa.Main {
     }
 
     have(thesis) by Tautology.from(thm, functionFrom.definition)
-
   }
 
   val pairInFunctionIsApp = Theorem(
@@ -1316,6 +1316,8 @@ object Functionals extends lisa.Main {
     ∀(g, in(g, z) <=> (in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x)))
   )(piUniqueness)
 
+  val Π = Pi
+
   /**
    * Theorem --- Pi with Empty Set is the Power Set of the Empty Set
    *
@@ -1361,5 +1363,82 @@ object Functionals extends lisa.Main {
     val ext = thenHave(∀(g, in(g, Pi(∅, f)) <=> in(g, powerSet(∅)))) by RightForall
 
     have(thesis) by Tautology.from(ext, extensionalityAxiom of (x -> Pi(∅, f), y -> powerSet(∅)))
+  }
+
+  /**
+   * Theorem --- Function from Pi is functional and has domain equal to the first component.
+   *
+   *  `g ∈ Π(x, f) ⊢ functional(g) ∧ functionDomain(g) = x`
+   */
+  val piFunctionalAndDomain = Theorem(
+    in(g, Pi(x, f)) |- (functional(g) /\ (functionDomain(g) === x))
+  ) {
+    val inPi = assume(in(g, Pi(x, f)))
+
+    have(∀(g, in(g, Pi(x, f)) <=> (in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x)))) by InstantiateForall(Pi(x, f))(
+      Pi.definition
+    )
+    val piDef = thenHave(in(g, Pi(x, f)) <=> (in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x))) by InstantiateForall(g)
+
+    have(in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x)) by Tautology.from(piDef)
+    val funcOver = thenHave(functionalOver(g, x)) by Weakening
+
+    have(thesis) by Tautology.from(functionalOver.definition of (f -> g), funcOver)
+  }
+
+  /**
+   * Theorem -- Function application of Pi typing
+   *
+   *  `g ∈ Π(x, f), a ∈ x ⊢ g(a) ∈ f(a)`
+   */
+  val piApplication = Theorem(
+    in(g, Pi(x, f)) /\ in(a, x) |- in(app(g, a), app(f, a))
+  ) {
+    val inPi = assume(in(g, Pi(x, f)))
+    val inDomain = assume(in(a, x))
+
+    val isFunctional = have(functional(g)) by Tautology.from(piFunctionalAndDomain, inPi)
+    val funcDomainEq = have(functionDomain(g) === x) by Tautology.from(piFunctionalAndDomain, inPi)
+    val inFuncDomain = have(in(a, functionDomain(g))) by Substitution.ApplyRules(funcDomainEq)(inDomain)
+
+    val appDef = have(
+      ((functional(g) /\ in(a, functionDomain(g))) ==> in(pair(a, app(g, a)), g))
+        /\ ((!functional(g) \/ !in(a, functionDomain(g))) ==> (app(g, a) === ∅))
+    ) by InstantiateForall(app(g, a))(
+      app.definition of (f := g, x := a)
+    )
+
+    val pairInG = have(in(pair(a, app(g, a)), g)) by Tautology.from(
+      isFunctional,
+      inFuncDomain,
+      appDef
+    )
+
+    have(∀(g, in(g, Pi(x, f)) <=> (in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x)))) by InstantiateForall(Pi(x, f))(
+      Pi.definition
+    )
+    val piDef = thenHave(in(g, Pi(x, f)) <=> (in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x))) by InstantiateForall(g)
+    have(in(g, powerSet(Sigma(x, f))) /\ functionalOver(g, x)) by Tautology.from(piDef)
+    val inPowerSigma = thenHave(in(g, powerSet(Sigma(x, f)))) by Weakening
+
+    val inPowerInElem = have(in(t, powerSet(p)) /\ in(y, t) |- in(y, p)) by Tableau.from(
+      powerAxiom of (x -> t, y -> p),
+      subsetAxiom of (x -> t, y -> p)
+    )
+
+    val pairInSigma = have(in(pair(a, app(g, a)), Sigma(x, f))) by Tautology.from(
+      inPowerInElem of (t -> g, p -> Sigma(x, f), y -> pair(a, app(g, a))),
+      inPowerSigma,
+      pairInG
+    )
+
+    have(in(secondInPair(pair(a, app(g, a))), app(f, firstInPair(pair(a, app(g, a)))))) by Tautology.from(
+      pairInSigma,
+      pairsInSigma of (p -> pair(a, app(g, a)), A -> x, B -> f)
+    )
+    thenHave(thesis) by Substitution.ApplyRules(
+      firstInPairReduction of (x -> a, y -> app(g, a)),
+      secondInPairReduction of (x -> a, y -> app(g, a))
+    )
   }
 }
