@@ -53,7 +53,9 @@ package object functions {
     pairsInSigma,
     piUniqueness,
     Pi,
-    piWithEmptySet
+    Π,
+    piWithEmptySet,
+    piApplication
   }
   export lisa.maths.settheory.functions.FunctionProperties.{
     surjective,
@@ -69,6 +71,7 @@ package object functions {
     constantFunctionDomain,
     constantFunctionIsFunctional,
     constantFunctionFunctionFrom,
-    constantFunctionApplication
+    constantFunctionApplication,
+    constantFunctionValue
   }
 }
