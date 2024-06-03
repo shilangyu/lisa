@@ -7,7 +7,14 @@ import lisa.fol.FOL
 import lisa.fol.FOL.{_, given}
 import lisa.kernel.proof.SequentCalculus.SCProofStep
 import lisa.maths.settheory.SetTheory.singleton
-import lisa.maths.settheory.functions.{app, functionFromApplication, functional, piApplication, |=>, Π}
+import lisa.maths.settheory.functions.FunctionProperties.constantFunction
+import lisa.maths.settheory.functions.FunctionProperties.constantFunctionApplication
+import lisa.maths.settheory.functions.app
+import lisa.maths.settheory.functions.functionFromApplication
+import lisa.maths.settheory.functions.functional
+import lisa.maths.settheory.functions.piApplication
+import lisa.maths.settheory.functions.|=>
+import lisa.maths.settheory.functions.Π
 import lisa.prooflib.BasicStepTactic._
 import lisa.prooflib.OutputManager
 import lisa.prooflib.ProofTacticLib._
@@ -23,7 +30,9 @@ object TypeLib extends lisa.Main {
   val z = variable
   val A = variable
   val B = variable
+  val C = variable
   val F = function[1]
+  val g = variable
   val any = DEF(x) --> top
 
   // A |=> B is the set of functions from A to B
@@ -31,6 +40,26 @@ object TypeLib extends lisa.Main {
   // F is C |> D desugars into ∀(x, (x is C) => (F(x) is D))
 
   val testTheorem = Theorem((x is A, f is (A |=> B), F is (A |=> B) |> (A |=> B)) |- (F(f) * (x) is B)) {
+    have(thesis) by TypeChecker.prove
+  }
+
+  val testTheoremX = Theorem((x is A, f is (A |=> B), g is ((A |=> B) |=> (A |=> B))) |- (g * (f) * (x) is B)) {
+    have(thesis) by TypeChecker.prove
+  }
+
+  val testTheoremY = Theorem((x is A, f is Π(A, B), g is (Π(A, B) |=> Π(A, B))) |- (g * (f) * (x) is B * (x))) {
+    have(thesis) by TypeChecker.prove
+  }
+
+  val testTheoremZ = Theorem((x is A, f is Π(A, B), g is (Π(Π(A, B), C))) |- (g * (f) :: C * (f))) {
+    have(thesis) by TypeChecker.prove
+  }
+
+  val testTheorem2 = Theorem((x is A, f is Π(A, B), F is Π(A, B) |> Π(A, B)) |- (F(f) * (x) is (B * (x)))) {
+    have(thesis) by TypeChecker.prove
+  }
+  
+  val testTheorem3 = Theorem((x :: A) |- (constantFunction(A, y) * (x) :: singleton(y))) {
     have(thesis) by TypeChecker.prove
   }
 
@@ -302,6 +331,8 @@ object TypeSystem {
 
   object TypeChecker extends ProofTactic {
     private val x = variable
+    private val g = variable
+    private val t = variable
 
     class TypingException(val msg: String) extends Exception(msg)
 
@@ -369,6 +400,32 @@ object TypeSystem {
                     typ.get
                   else throw TypingException("Constant " + tc + " expected to be of type " + typ + " but has type " + tc.typ + ".")
 
+                case AppliedFunction(func @ constantFunction(inType, outElem), arg) =>
+                  val argType = innerTypecheck(context2, arg, None)
+                  val argProof = lastStep
+                  val outType = singleton(outElem)
+                  
+                  typ match
+                    case None =>
+                      if K.isSame((arg is inType).asFormula.underlying, (arg is argType).asFormula.underlying) then
+                        have(term is outType) by Tautology.from(
+                          constantFunctionApplication of (a := arg, x := inType, t := outElem),
+                          argProof
+                        )
+                        outType
+                      else throw TypingException("Constant function argument " + arg + " expected to be of type " + inType + " but has type " + argType + ".")
+                    case Some(typ) if K.isSame((term is typ).asFormula.underlying, (term is outType).asFormula.underlying) =>
+                      if K.isSame((arg is inType).asFormula.underlying, (arg is argType).asFormula.underlying) then
+                        have(term is outType) by Tautology.from(
+                          constantFunctionApplication of (a := arg, x := inType, t := outElem),
+                          argProof
+                        )
+                        typ
+                      else throw TypingException("Constant function argument " + arg + " expected to be of type " + inType + " but has type " + argType + ".")
+
+                    case _ =>
+                      throw TypingException("Constant function" + func + " expected to have function type ? |=> " + typ + ", but has type ? |=> " + outType + ". ")
+                
                 case AppliedFunction(func, arg) =>
                   val funcType = innerTypecheck(context2, func, None)
                   val funcProof = lastStep
@@ -398,6 +455,35 @@ object TypeSystem {
 
                         case _ =>
                           throw TypingException("Function " + func + " expected to have function type ? |=> " + typ + ", but has type " + funcType + ". ")
+                    case Π(inType, outDependantType) =>
+                      val outType = app(outDependantType, arg)
+
+                      typ match
+                        case None =>
+                          if K.isSame((arg is inType).asFormula.underlying, (arg is argType).asFormula.underlying) then
+                            have(term is outType) by Tautology.from(
+                              piApplication of (g := func, a := arg, x := inType, f := outDependantType),
+                              funcProof,
+                              argProof
+                            )
+                            outType
+                          else throw TypingException("Function " + func + " found to have type " + funcType + ", but argument " + arg + " has type " + argType + " instead of expected " + inType + ".")
+                        case Some(typ) if K.isSame((term is typ).asFormula.underlying, (term is outType).asFormula.underlying) =>
+                          if K.isSame((arg is inType).asFormula.underlying, (arg is argType).asFormula.underlying) then
+                            have(term is outType) by Tautology.from(
+                              piApplication of (g := func, a := arg, x := inType, f := outDependantType),
+                              funcProof,
+                              argProof
+                            )
+                            typ
+                          else throw TypingException("Function " + func + " found to have type " + funcType + ", but argument " + arg + " has type " + argType + " instead of expected " + inType + ".")
+
+                        case _ =>
+                          throw TypingException("Function " + func + " expected to have function type ? |=> " + typ + ", but has type " + funcType + ". ")
+                    case _ =>
+                      throw TypingException(
+                        "Function " + func + " expected to have function type ? |=> " + typ + ", but has type " + funcType + ". Note that terms having multiple different types is only partialy supported."
+                      )
 
                 case AppliedFunctional(label, args) =>
                   val (argTypes, argTypesProofs) = args
