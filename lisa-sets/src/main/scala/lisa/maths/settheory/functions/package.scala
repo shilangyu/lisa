@@ -71,6 +71,7 @@ package object functions {
     constantFunctionDomain,
     constantFunctionIsFunctional,
     constantFunctionFunctionFrom,
-    constantFunctionApplication
+    constantFunctionApplication,
+    constantFunctionValue
   }
 }

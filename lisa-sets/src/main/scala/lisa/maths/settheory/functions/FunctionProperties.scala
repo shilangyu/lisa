@@ -193,71 +193,6 @@ object FunctionProperties extends lisa.Main {
   val constantFunction = DEF(x, t) --> cartesianProduct(x, singleton(t))
 
   /**
-   * Theorem --- the value of a constant function is the same for all elements in its domain.
-   *
-   *  `a ∈ x |- app(constantFunction(x, t), a) = t`
-   */
-  val constantFunctionApplication = Theorem(
-    in(a, x) |- app(constantFunction(x, t), a) === t
-  ) {
-    assume(in(a, x))
-    have(functionFrom(constantFunction(x, t), x, singleton(t))) by Weakening(constantFunctionFunctionFrom)
-
-    have(in(app(constantFunction(x, t), a), singleton(t))) by Tautology.from(
-      functionFromApplication of (f := constantFunction(x, t), y := singleton(t)),
-      lastStep
-    )
-
-    have(thesis) by Tautology.from(
-      singletonHasNoExtraElements of (y := app(constantFunction(x, t), a), x := t),
-      lastStep
-    )
-  }
-
-  /**
-   * Theorem --- the domain of a constant function is the set it is defined on.
-   *
-   *  `dom(constantFunction(x, t)) = x`
-   */
-  val constantFunctionDomain = Theorem(
-    functionDomain(constantFunction(x, t)) === x
-  ) {
-    // since we define constant function using the cartesian product, this requires a bit more effort
-    val constFunDef = have((constantFunction(x, t) === cartesianProduct(x, singleton(t)))) by Weakening(constantFunction.definition of constantFunction(x, t))
-
-    have(∀(p, in(p, functionDomain(constantFunction(x, t))) <=> ∃(a, in(pair(p, a), constantFunction(x, t))))) by InstantiateForall(functionDomain(constantFunction(x, t)))(
-      functionDomain.definition of (r := constantFunction(x, t))
-    )
-    val domainDef = thenHave(in(p, functionDomain(constantFunction(x, t))) <=> ∃(a, in(pair(p, a), constantFunction(x, t)))) by InstantiateForall(p)
-
-    val rhs = have(∃(a, in(pair(p, a), constantFunction(x, t))) ==> in(p, x)) subproof {
-      val assumption = assume(∃(a, in(pair(p, a), constantFunction(x, t))))
-      val aw = witness(assumption)
-      have(in(pair(p, aw), constantFunction(x, t))) by Restate
-      thenHave(in(pair(p, aw), cartesianProduct(x, singleton(t)))) by Substitution.ApplyRules(constFunDef)
-
-      have(thesis) by Tautology.from(lastStep, pairInCartesianProduct of (a := p, b := aw, y := singleton(t)))
-    }
-
-    val lhs = have(in(p, x) ==> ∃(a, in(pair(p, a), constantFunction(x, t)))) subproof {
-      assume(in(p, x))
-      val tIn = have(in(t, singleton(t))) by Tautology.from(singletonHasNoExtraElements of (y := t, x := t))
-
-      have(in(pair(p, t), cartesianProduct(x, singleton(t)))) by Tautology.from(
-        pairInCartesianProduct of (a := p, b := t, y := singleton(t)),
-        tIn
-      )
-      thenHave(∃(a, in(pair(p, a), cartesianProduct(x, singleton(t))))) by RightExists
-      thenHave(∃(a, in(pair(p, a), constantFunction(x, t)))) by Substitution.ApplyRules(constFunDef)
-    }
-
-    have(in(p, x) <=> in(p, functionDomain(constantFunction(x, t)))) by Tautology.from(domainDef, rhs, lhs)
-    val ext = thenHave(∀(p, in(p, x) <=> in(p, functionDomain(constantFunction(x, t))))) by RightForall
-
-    have(thesis) by Tautology.from(ext, extensionalityAxiom of (y := functionDomain(constantFunction(x, t))))
-  }
-
-  /**
    * Theorem --- a constant function is functional.
    */
   val constantFunctionIsFunctional = Theorem(
@@ -304,6 +239,49 @@ object FunctionProperties extends lisa.Main {
   }
 
   /**
+   * Theorem --- the domain of a constant function is the set it is defined on.
+   *
+   *  `dom(constantFunction(x, t)) = x`
+   */
+  val constantFunctionDomain = Theorem(
+    functionDomain(constantFunction(x, t)) === x
+  ) {
+    // since we define constant function using the cartesian product, this requires a bit more effort
+    val constFunDef = have((constantFunction(x, t) === cartesianProduct(x, singleton(t)))) by Weakening(constantFunction.definition of constantFunction(x, t))
+
+    have(∀(p, in(p, functionDomain(constantFunction(x, t))) <=> ∃(a, in(pair(p, a), constantFunction(x, t))))) by InstantiateForall(functionDomain(constantFunction(x, t)))(
+      functionDomain.definition of (r := constantFunction(x, t))
+    )
+    val domainDef = thenHave(in(p, functionDomain(constantFunction(x, t))) <=> ∃(a, in(pair(p, a), constantFunction(x, t)))) by InstantiateForall(p)
+
+    val rhs = have(∃(a, in(pair(p, a), constantFunction(x, t))) ==> in(p, x)) subproof {
+      val assumption = assume(∃(a, in(pair(p, a), constantFunction(x, t))))
+      val aw = witness(assumption)
+      have(in(pair(p, aw), constantFunction(x, t))) by Restate
+      thenHave(in(pair(p, aw), cartesianProduct(x, singleton(t)))) by Substitution.ApplyRules(constFunDef)
+
+      have(thesis) by Tautology.from(lastStep, pairInCartesianProduct of (a := p, b := aw, y := singleton(t)))
+    }
+
+    val lhs = have(in(p, x) ==> ∃(a, in(pair(p, a), constantFunction(x, t)))) subproof {
+      assume(in(p, x))
+      val tIn = have(in(t, singleton(t))) by Tautology.from(singletonHasNoExtraElements of (y := t, x := t))
+
+      have(in(pair(p, t), cartesianProduct(x, singleton(t)))) by Tautology.from(
+        pairInCartesianProduct of (a := p, b := t, y := singleton(t)),
+        tIn
+      )
+      thenHave(∃(a, in(pair(p, a), cartesianProduct(x, singleton(t))))) by RightExists
+      thenHave(∃(a, in(pair(p, a), constantFunction(x, t)))) by Substitution.ApplyRules(constFunDef)
+    }
+
+    have(in(p, x) <=> in(p, functionDomain(constantFunction(x, t)))) by Tautology.from(domainDef, rhs, lhs)
+    val ext = thenHave(∀(p, in(p, x) <=> in(p, functionDomain(constantFunction(x, t))))) by RightForall
+
+    have(thesis) by Tautology.from(ext, extensionalityAxiom of (y := functionDomain(constantFunction(x, t))))
+  }
+
+  /**
    * Theorem --- a constant function is a function from `x` to the singleton of `t`.
    *
    *    `constantFunction(x, t) ∈ x → {t}`
@@ -338,6 +316,38 @@ object FunctionProperties extends lisa.Main {
   }
 
   /**
+   * Theorem --- application of a constant function with an element from its domain returns an element in the singleton of `t`.
+   *
+   *  `g ∈ constantFunction(x, t), a ∈ x |- app(g, a) ∈ {t}`
+   */
+  val constantFunctionApplication = Theorem(
+    in(a, x) |- in(app(constantFunction(x, t), a), singleton(t))
+  ) {
+    assume(in(a, x))
+    have(functionFrom(constantFunction(x, t), x, singleton(t))) by Weakening(constantFunctionFunctionFrom)
+
+    have(thesis) by Tautology.from(
+      functionFromApplication of (f := constantFunction(x, t), y := singleton(t)),
+      functionFrom.definition of (f := constantFunction(x, t), y := singleton(t)),
+      lastStep
+    )
+  }
+
+  /**
+   * Theorem --- the value of a constant function is the same for all elements in its domain.
+   *
+   *  `a ∈ x |- app(constantFunction(x, t), a) = t`
+   */
+  val constantFunctionValue = Theorem(
+    in(a, x) |- app(constantFunction(x, t), a) === t
+  ) {
+    have(thesis) by Tautology.from(
+      singletonHasNoExtraElements of (y := app(constantFunction(x, t), a), x := t),
+      constantFunctionApplication
+    )
+  }
+
+  /**
    * Theorem --- Sigma with a constant function is the cartesian product
    *
    *    `Σ(A, constantFunction(A, t)) = A × t`
@@ -354,7 +364,7 @@ object FunctionProperties extends lisa.Main {
 
     have((in(a, A) /\ in(b, app(constantFunction(A, t), a))) <=> (in(a, A) /\ in(b, t))) subproof {
       val constApp = have(in(a, A) <=> (in(a, A) /\ (app(constantFunction(A, t), a) === t))) by Tautology.from(
-        constantFunctionApplication of (x := A)
+        constantFunctionValue of (x := A)
       )
 
       val lhs = have(in(a, A) /\ in(b, app(constantFunction(A, t), a)) |- (in(a, A) /\ in(b, t))) subproof {
